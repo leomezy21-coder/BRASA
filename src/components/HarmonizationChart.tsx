@@ -33,6 +33,8 @@ export const HarmonizationChart: React.FC = () => {
       year_to: filters.yearRange[1],
       confidence: filters.confidence,
       daynight: filters.daynight,
+      country_code: filters.countryCode || (filters.provinceId?.length === 3 ? filters.provinceId.toUpperCase() : 'ECU'),
+      continent: filters.continent && filters.continent !== 'all' ? filters.continent : undefined,
       province_id: filters.provinceId,
       canton_id: filters.cantonId,
       geojson: filters.customGeometry?.geojson,
@@ -54,6 +56,9 @@ export const HarmonizationChart: React.FC = () => {
 
     return () => ac.abort()
   }, [
+    filters.countryCode,
+    filters.country,
+    filters.continent,
     filters.yearRange,
     filters.confidence,
     filters.daynight,
@@ -154,19 +159,19 @@ export const HarmonizationChart: React.FC = () => {
     <div className="bg-white rounded-[28px] p-6 sm:p-7 border border-slate-200/70">
       <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3">
         <div>
-          <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-[#FF7900]">Armonización</p>
+          <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-[#FF7900]">Comparación de Sensores</p>
           <h3 className="mt-2 text-xl sm:text-2xl font-black tracking-tight text-[#0B1B3D]">
-            Una sola serie para dos sensores
+            Respuesta Instrumental: MODIS vs VIIRS
           </h3>
           <p className="mt-1 max-w-xl text-sm text-slate-500">
-            Sin ajustar, la llegada de VIIRS en 2012 crea un salto artificial. BRASA lo calibra con los años en que ambos
-            sensores coinciden.
+            MODIS (1 km) y VIIRS (375 m) tienen diferentes capacidades de detección. La agregación por fire_cell_days a 1° unifica la presencia diaria y el período de solapamiento {OVERLAP[0]}–{OVERLAP[1]} evidencia la mayor sensibilidad de VIIRS para evitar conclusiones distorsionadas.
           </p>
         </div>
         {ratio !== null && (
           <div className="sm:text-right">
-            <p className="text-xs text-slate-400">VIIRS / MODIS {OVERLAP[0]}–{OVERLAP[1]}</p>
+            <p className="text-xs text-slate-400">Ratio observacional VIIRS / MODIS {OVERLAP[0]}–{OVERLAP[1]}</p>
             <p className="text-2xl font-black tracking-tight text-[#0B1B3D]">×{ratio.toFixed(1)}</p>
+            <p className="text-[11px] text-slate-400 font-medium">Sensibilidad de detección</p>
           </div>
         )}
       </div>

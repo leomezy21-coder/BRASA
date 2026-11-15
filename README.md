@@ -1,283 +1,189 @@
 # BRASA — Bitácora Regional de Actividad Satelital Armonizada
 ### NASA Space Apps Challenge 2026 • Desarrollado por el Equipo CODE RED
-
-BRASA es una aplicación web interactiva y científica diseñada para explorar, analizar y comparar la actividad histórica de incendios y anomalías térmicas en Ecuador (2001–2025) a partir de las observaciones satelitales de los sensores **MODIS** (satélites Terra y Aqua) y **VIIRS** (satélites Suomi-NPP y NOAA-20) de la NASA.
-
-El frontend está completamente desacoplado del backend mediante una interfaz tipada estricta y opera inicialmente en **Modo Mock determinista**, permitiendo una experiencia de usuario completa y lista para producción.
+**Institución:** Escuela Superior Politécnica de Chimborazo (ESPOCH), Riobamba, Ecuador.
 
 ---
 
-## 🚀 Tecnologías Principales
+## 🛰️ 1. Problema Abordado
 
-- **Framework:** React 19 + TypeScript + Vite
-- **Estilos:** Tailwind CSS v4
-- **Navegación:** React Router v7
-- **Mapas Geoespaciales:** Leaflet + React Leaflet + Leaflet Draw
-- **Visualización Científica:** ECharts (`echarts` y `echarts-for-react`)
-- **Iconografía:** Lucide React
-- **Pruebas:** Vitest + React Testing Library + JSDOM
+Comprender la distribución global y temporal de la actividad de fuego y anomalías térmicas es un desafío complejo para investigadores, gestores territoriales y tomadores de decisiones. 
+
+NASA FIRMS ofrece un catálogo extraordinario de observaciones satelitales globales, pero presenta dos barreras científicas cruciales:
+1. **Disparidad de resolución instrumental:** MODIS observa con una resolución nominal de 1 km (desde 2000/2001), mientras que VIIRS opera a 375 m (desde 2012 con Suomi-NPP y 2018 con NOAA-20). Sumar detecciones sin tratamiento genera un salto artificial a partir de 2012 que puede interpretarse erróneamente como un incremento drástico en la cantidad de incendios.
+2. **Volumen masivo no indexado para la web:** Decenas de millones de registros distribuidos en múltiples archivos anuales impiden una exploración fluida e interactiva en navegadores web sin infraestructura de procesamiento optimizada.
 
 ---
 
-## 📂 Estructura del Proyecto
+## 🔥 2. La Solución BRASA
+
+**BRASA** transforma millones de observaciones satelitales de NASA FIRMS en una plataforma web interactiva, responsiva y científicamente fundamentada que permite:
+- **Explorar:** Navegar espacialmente anomalías térmicas activas y consultar series temporales de 2001 a 2025.
+- **Calendario Histórico:** Visualizar la actividad semanal agregada en matrices de calor (*heatmaps*) de 52/53 semanas ISO por año.
+- **Comparar:** Contrastar año contra año (ej. 2024 vs 2012) para evaluar temporadas secas críticas, duración y desplazamientos fenológicos.
+- **Alertas Estadísticas:** Diagnosticar la semana observada respecto a su propia climatología histórica (media, percentiles P10, P50, P90 y Z-score), clasificando el régimen en *Normal*, *Elevado* o *Inusual*.
+- **Alcance Global y Enfoque Regional:** Cobertura de 177 países de referencia mundial con subdivisiones detalladas para Ecuador.
+
+---
+
+## 🌍 3. Why BRASA Matters (International Scientific Summary)
+
+> **Why BRASA Matters:**  
+> Satellite thermal anomaly monitoring often struggles with the instrumental transition between sensor generations. The introduction of VIIRS (375 m) in 2012 dramatically increased raw hotspot counts compared to legacy MODIS (1 km), creating potential misinterpretations in multi-decadal fire trend studies.
+>
+> BRASA addresses this challenge by aggregating daily vegetation fire detections (`type=0`) into uniform spatial grids using the **fire_cell_days** metric, allowing researchers and civil authorities to explore 2001–2025 historical patterns across 177 countries without false pixel-multiplication artifacts. By coupling climatological percentiles (P10–P90) and z-scores with interactive mapping, BRASA provides an open, accessible diagnostic tool to identify unseasonal burning activity worldwide.
+>
+> *Note: BRASA is an exploratory scientific platform designed for the NASA Space Apps Challenge 2026; its statistical alert levels do not replace official emergency or disaster response systems.*
+
+---
+
+## 🔬 4. Fuentes de Datos y Fundamento Científico
+
+### 4.1. Sensores Satelitales NASA FIRMS
+- **MODIS (Terra y Aqua):** Resolución nominal ~1 km. Registros disponibles y consolidados desde 2000/2001.
+- **VIIRS (Suomi-NPP y NOAA-20):** Resolución nominal ~375 m en bandas I. Registros disponibles desde 2012 (S-NPP) y 2018 (NOAA-20).
+- **Filtro de clasificación:** Se procesan exclusivamente observaciones clasificadas como `type=0` (fuegos de vegetación/quema biológica), excluyendo offshore, actividad industrial y volcanes.
+
+### 4.2. Métrica `fire_cell_days` (fcd)
+Un incendio forestal extenso puede activar decenas de píxeles VIIRS vecinos en una misma pasada satelital. Para evitar sesgos instrumentales:
+- El espacio se discretiza en una cuadrícula homogénea (celdas de 1 grado en el resumen espacial mundial).
+- Si en una celda se detecta al menos un foco térmico activo en un día y para una familia de sensor, se cuenta como **1 celda-día**.
+- Esto amortigua la diferencia de densidad de píxeles entre MODIS (1 km) y VIIRS (375 m).
+
+### 4.3. Diferencias Instrumentales y Solapamiento
+MODIS y VIIRS **no son idénticos radiométricamente**. Durante el período de solapamiento (2012–2018), ambos sensores observaron simultáneamente. BRASA presenta sus curvas comparativas y advierte explícitamente a los usuarios sobre el cambio de sensibilidad a partir de 2012 en lugar de alterar arbitrariamente los registros con factores no demostrados.
+
+---
+
+## 🏛️ 5. Arquitectura del Sistema
 
 ```text
-├── .env.example              # Variables de entorno de ejemplo
-├── .env                      # Configuración local activa
-├── index.html                # Entrada HTML con metadatos y favicon
-├── package.json              # Dependencias y scripts
-├── vite.config.ts            # Configuración de Vite, Tailwind y Vitest
-├── src/
-│   ├── api/
-│   │   ├── client.ts         # Cliente HTTP con soporte de AbortSignal y selector de modo Mock
-│   │   └── mock.ts           # Generador determinista de datos históricos de Ecuador (2001–2025)
-│   ├── components/
-│   │   ├── Navbar.tsx        # Navegación principal y badges de estado
-│   │   ├── MockBanner.tsx    # Banner informativo "Datos simulados de demostración"
-│   │   ├── FiltersPanel.tsx  # Filtros territoriales, sensores, cobertura, radio y GeoJSON
-│   │   ├── MapView.tsx       # Mapa Leaflet de símbolos proporcionales por FRP y capas
-│   │   ├── KpiCards.tsx      # 4 indicadores clave (Pico, Año récord, Tendencia, Estado)
-│   │   ├── FireCalendar.tsx  # Matriz Heatmap (Años vs Semanas ISO) en fire_cell_days
-│   │   ├── ClimatologyChart.tsx # Gráfico de banda percentil P10-P90, media y año en foco
-│   │   ├── AnomalyList.tsx   # Períodos inusuales ordenados por Z-Score
-│   │   ├── TimelinePlayer.tsx# Reproductor de semanas temporal interactivo
-│   │   ├── ExportControls.tsx# Exportación de datos a CSV y gráficos a PNG
-│   │   ├── SkeletonLoader.tsx# Skeletons de carga
-│   │   └── ErrorMessage.tsx  # Estado de error con botón de reintento
-│   ├── hooks/
-│   │   ├── useFilters.tsx    # Contexto global y estado compartido de filtros
-│   │   ├── useBrasaData.ts   # Hook central de consultas con cancelación y reintentos
-│   │   └── useTimeline.ts    # Controlador de animación temporal
-│   ├── pages/
-│   │   ├── Home.tsx          # Presentación ejecutiva y acceso directo
-│   │   ├── Explore.tsx       # Dashboard interactivo principal
-│   │   ├── Compare.tsx       # Herramienta de comparación interanual
-│   │   ├── Alertas.tsx       # Diagnóstico de semana actual (Semáforo y Z-score)
-│   │   ├── Methodology.tsx   # Documentación científica MODIS vs VIIRS y fire_cell_days
-│   │   └── AboutTeam.tsx     # Información del equipo CODE RED y visión del proyecto
-│   ├── utils/
-│   │   ├── dateUtils.ts      # Cálculo de semanas ISO y rangos de fechas
-│   │   ├── exportUtils.ts    # Exportadores a CSV y PNG
-│   │   └── geoUtils.ts       # Geometrías circulares, polígonos y bounding boxes
-│   ├── types.ts              # Definiciones de tipos y contrato de API REST
-│   └── test/                 # Pruebas unitarias y de integración
+┌─────────────────────────────────────────────────────────────┐
+│                      FRONTEND WEB                           │
+│  React 19 • TypeScript • Vite • Tailwind CSS v4 • ECharts    │
+│  Leaflet / React Leaflet • Lucide React • React Router v7   │
+└──────────────────────────────┬──────────────────────────────┘
+                               │ HTTP REST (JSON)
+                               ▼
+┌─────────────────────────────────────────────────────────────┐
+│                    BACKEND FASTAPI                          │
+│  Python 3.11+ • FastAPI • SQLite3 (Modo Solo Lectura)       │
+│  endpoints: /health, /api/regions, /api/calendar,           │
+│  /api/climatology, /api/season, /api/anomalies, /api/hotspots│
+└──────────────────────────────┬──────────────────────────────┘
+                               │ Consultas indexadas
+                               ▼
+┌─────────────────────────────────────────────────────────────┐
+│                BASES DE DATOS GEOESPACIALES                 │
+│  • brasa_render.db: Resumen semanal preprocesado             │
+│    (919.814 filas agregadas, 177 países, 2004–2026)         │
+│  • brasa_mapa.db: Capa espacial de focos (2.846.750 puntos) │
+│  • geografia/paises_referencia.json: Polígonos y centros    │
+└─────────────────────────────────────────────────────────────┘
 ```
 
 ---
 
-## 🛠️ Instalación y Ejecución
+## 🚀 6. Instalación y Ejecución Local
 
-### Prerrequisitos
-- Node.js versión 18+ (recomendado Node 20 o superior).
-- npm versión 9+.
+### 6.1. Prerrequisitos
+- **Node.js:** Versión 18+ (recomendado Node 20 o superior).
+- **Python:** Versión 3.10+ (con virtualenv).
 
-### Pasos
-1. **Instalar dependencias:**
-   ```bash
-   npm install
-   ```
+### 6.2. Backend (FastAPI)
+```bash
+# 1. Acceder al directorio backend
+cd backend
 
-2. **Iniciar servidor de desarrollo:**
-   ```bash
-   npm run dev
-   ```
-   Abre [http://localhost:5173](http://localhost:5173) en tu navegador.
+# 2. Activar el entorno virtual existente o crear uno
+# En Windows PowerShell:
+.\.venv\Scripts\Activate.ps1
+# En Linux / macOS:
+# source .venv/bin/activate
 
-3. **Ejecutar pruebas unitarias:**
-   ```bash
-   npm run test
-   ```
+# 3. Instalar dependencias si fuera necesario
+pip install -r requirements.txt
 
-4. **Compilar para producción:**
-   ```bash
-   npm run build
-   ```
+# 4. Iniciar la API REST
+uvicorn main:app --reload --port 8000
+```
+La API estará disponible en `http://localhost:8000` y su documentación interactiva Swagger en `http://localhost:8000/docs`.
+
+### 6.3. Frontend (React + Vite)
+```bash
+# 1. En la raíz del repositorio, instalar dependencias
+npm install
+
+# 2. Configurar variables de entorno (.env)
+# Por defecto se conecta al backend local en http://localhost:8000
+npm run dev
+```
+La aplicación web se abrirá en `http://localhost:5173`.
 
 ---
 
-## ⚙️ Variables de Entorno
+## ⚙️ 7. Variables de Entorno
 
 Configurables en `.env` (basado en `.env.example`):
 
 | Variable | Valor por defecto | Descripción |
 | :--- | :--- | :--- |
-| `VITE_API_URL` | `http://localhost:8000` | URL base de la API REST del backend. |
-| `VITE_USE_MOCK` | `true` | `true` para usar datos simulados deterministas; `false` para conectar al backend real. |
-
-> En modo mock (`VITE_USE_MOCK=true`), la aplicación muestra el banner superior: **"Datos simulados de demostración"**.
+| `VITE_API_URL` | `http://localhost:8000` | URL base de la API REST del backend (local o desplegada en Render). |
+| `VITE_USE_MOCK` | `false` | `false` para consultar datos reales NASA FIRMS del backend; `true` para activar modo demo / simulación. |
 
 ---
 
-## 📡 Contrato de API REST
+## 🧪 8. Pruebas Automatizadas
 
-El frontend se comunica exclusivamente mediante las funciones tipadas en `src/api/client.ts`. Todas las peticiones `POST` envían los parámetros base de filtrado y reciben respuestas en formato JSON estructurado:
+El proyecto incluye suites completas de pruebas unitarias y de integración:
 
-### Parámetros Base de Filtrado (Peticiones POST)
-```json
-{
-  "year_from": 2001,
-  "year_to": 2025,
-  "sensor": "harmonized",    // "harmonized" | "modis" | "viirs"
-  "confidence": "nominal_high", // "nominal_high" | "all"
-  "daynight": "all",          // "all" | "D" | "N"
-  "province_id": "chimborazo",
-  "canton_id": "riobamba",
-  "geojson": { ... },         // Opcional: Geometría personalizada
-  "bbox": [-78.95, -2.40, -78.35, -1.35] // Opcional
-}
+### Pruebas de Frontend (Vitest)
+```bash
+npm test
 ```
+Ejecuta las pruebas de utilidades geográficas (`geoUtils`), fechas ISO (`dateUtils`), generador determinista (`apiMock`) y componentes UI (`components.test.tsx`).
 
-### Endpoints Oficiales
+### Comprobación de Tipos y Compilación
+```bash
+npm run build
+```
+Ejecuta el compilador de TypeScript (`tsc -b`) y empaqueta los assets de producción con Vite.
 
-#### 1. Calendario Histórico
-- **Método:** `POST /api/calendar`
-- **Respuesta:**
-  ```json
-  {
-    "unit": "fire_cell_days",
-    "weeks": [
-      {
-        "year": 2024,
-        "week": 36,
-        "value": 142.5,
-        "source": "BOTH" // "MODIS" | "BOTH" | "VIIRS_CAL"
-      }
-    ]
-  }
-  ```
+### Linter
+```bash
+npm run lint
+```
+Ejecuta Oxlint sobre todos los archivos TypeScript y JSX del proyecto.
 
-#### 2. Climatología Semanal (Línea Base Histórica)
-- **Método:** `POST /api/climatology`
-- **Respuesta:**
-  ```json
-  {
-    "weeks": [
-      {
-        "week": 36,
-        "mean": 48.2,
-        "p10": 12.0,
-        "p50": 42.5,
-        "p90": 98.4
-      }
-    ]
-  }
-  ```
-
-#### 3. Temporadas Anuales
-- **Método:** `POST /api/season`
-- **Respuesta:**
-  ```json
-  {
-    "years": [
-      {
-        "year": 2024,
-        "start_week": 29,
-        "peak_week": 36,
-        "end_week": 43,
-        "total": 1845.2
-      }
-    ]
-  }
-  ```
-
-#### 4. Anomalías Estadísticas
-- **Método:** `POST /api/anomalies`
-- **Respuesta:**
-  ```json
-  {
-    "items": [
-      {
-        "year": 2024,
-        "week": 36,
-        "value": 142.5,
-        "zscore": 2.85,
-        "percentile": 94.2
-      }
-    ]
-  }
-  ```
-
-#### 5. Focos de Calor Activos
-- **Método:** `POST /api/hotspots`
-- **Parámetros adicionales:** `year`, `week` o `date_from`, `date_to`.
-- **Respuesta:**
-  ```json
-  {
-    "points": [
-      {
-        "lat": -1.6709,
-        "lon": -78.6545,
-        "date": "2024-09-04",
-        "frp": 68.4,
-        "sensor": "VIIRS"
-      }
-    ]
-  }
-  ```
-
-#### 6. Estado de la Semana Actual
-- **Método:** `POST /api/current-status`
-- **Respuesta:**
-  ```json
-  {
-    "week": 37,
-    "value": 84.1,
-    "percentile": 82.5,
-    "zscore": 1.64,
-    "level": "elevado" // "normal" | "elevado" | "inusual"
-  }
-  ```
-
-#### 7. Regiones y Provincias
-- **Método:** `GET /api/regions`
-- **Respuesta:**
-  ```json
-  [
-    {
-      "id": "chimborazo",
-      "name": "Chimborazo",
-      "center": [-1.6709, -78.6545],
-      "zoom": 10,
-      "cantons": [
-        { "id": "riobamba", "name": "Riobamba", "lat": -1.6709, "lon": -78.6545 }
-      ],
-      "geojson": {
-        "type": "Polygon",
-        "coordinates": [...]
-      }
-    }
-  ]
-  ```
+### Verificación del Backend Python
+```bash
+backend\.venv\Scripts\python.exe backend\verify_main.py
+```
+Verifica la integridad de las bases SQLite, la conexión en solo lectura y la validez de los endpoints `/health`, `/api/regions`, `/api/calendar`, `/api/climatology`, `/api/season`, `/api/anomalies`, `/api/current-status` y `/api/hotspots`.
 
 ---
 
-## 🌐 Despliegue en Producción
+## ☁️ 9. Despliegue en la Nube (Render)
 
-### Despliegue en Netlify
-1. Conecta tu repositorio de GitHub en Netlify.
-2. Configura los parámetros de compilación:
-   - **Build command:** `npm run build`
-   - **Publish directory:** `dist`
-3. Agrega la variable de entorno:
-   - `VITE_USE_MOCK=true` (o la URL de tu backend en `VITE_API_URL`).
-4. Añade un archivo `public/_redirects` con el siguiente contenido para dar soporte al enrutamiento de React Router:
-   ```text
-   /*    /index.html   200
-   ```
+El archivo `render.yaml` en la raíz define el servicio web para Render:
+- **Build command:** `cd backend && python -m pip install -r requirements_render.txt && python descomprimir_render.py && python descomprimir_mapa.py`
+- **Start command:** `cd backend && python -m uvicorn main:app --host 0.0.0.0 --port $PORT`
+- **Health check path:** `/health`
+- **Runtime:** Python 3.11.9
 
-### Despliegue en GitHub Pages
-1. Instala el paquete opcional `gh-pages` o configura GitHub Actions.
-2. En GitHub Actions, utiliza el flujo de trabajo estándar de Vite estático desplegando la carpeta `dist`.
+Tanto `brasa_render.db.gz` (~5 MB) como `brasa_mapa.db.gz` (~51 MB) se encuentran bajo el límite de tamaño de archivos de GitHub y se descomprimen automáticamente al arrancar el contenedor en Render.
 
 ---
 
-## 🔬 Consideraciones Metodológicas de NASA FIRMS
-1. **Píxeles activos ≠ Incendios individuales:** Los sensores detectan anomalías térmicas en píxeles de superficie (1km en MODIS y 375m en VIIRS). Un mismo incendio extenso activa múltiples píxeles vecinos a lo largo de varios días.
-2. **fire_cell_days:** La métrica estandarizada cuenta la presencia diaria de actividad en cuadrículas regulares de 0.05°, evitando el sesgo artificial de incremento de conteo derivado del salto tecnológico de MODIS a VIIRS en 2012.
-3. **Potencia Radiativa de Fuego (FRP):** Representa la tasa instantánea de energía radiativa liberada en megavatios (MW), directamente proporcional a la biomasa consumida y emisión de carbono.
+## ⚠️ 10. Limitaciones Científicas Identificadas
+
+1. **Resolución de agregación:** La base espacial mundial se encuentra precalculada a nivel de celdas de 1° por día y familia de sensor. Los puntos visibles en el mapa representan los centros de celdas activas con su FRP representativo, no la latitud/longitud exacta de cada píxel FIRMS.
+2. **Subdivisiones territoriales:** El selector permite navegar los 177 países del catálogo de referencia. Para Ecuador se incluyen las provincias y cantones históricos; para otros países la consulta se ejecuta a escala nacional y continental.
+3. **Sensores:** Las observaciones anteriores a 2012 corresponden exclusivamente a MODIS; las series posteriores combinan MODIS y VIIRS.
+4. **Naturaleza orientativa:** Los umbrales estadísticos (Normal, Elevado, Inusual) son herramientas de análisis exploratorio y **no constituyen declaraciones oficiales de desastre ni alertas tempranas operativas**.
 
 ---
 
-## 👥 Equipo CODE RED
-Proyecto desarrollado con fines científicos y educativos para el **NASA Space Apps Challenge 2026**.
-Licencia MIT.
+## 👥 11. Equipo CODE RED EMERGENCY OPS
+- **Institución:** Escuela Superior Politécnica de Chimborazo (ESPOCH), Riobamba, Ecuador.
+- **Competencia:** NASA Space Apps Challenge 2026.
+- **Licencia:** MIT.

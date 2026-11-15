@@ -30,6 +30,8 @@ export interface BaseFilterParams {
   sensor: SensorType
   confidence: ConfidenceLevel
   daynight: DayNight
+  country_code?: string
+  continent?: string
   geojson?: GeoJSON.GeoJsonObject
   bbox?: [number, number, number, number] // [minLon, minLat, maxLon, maxLat]
   province_id?: string
@@ -124,6 +126,7 @@ export interface Canton {
 export interface Region {
   id: string
   name: string
+  continent?: string
   geojson: GeoJSON.Polygon | GeoJSON.GeoJsonObject | any
   center: [number, number] // [lat, lon]
   zoom: number
@@ -135,6 +138,8 @@ export type RegionsResponse = Region[]
 // Estado de filtros del cliente
 export interface FilterState {
   country: string // 'Ecuador'
+  countryCode: string // 'ECU'
+  continent?: string
   provinceId: string
   cantonId: string
   yearRange: [number, number] // [2001, 2025]

@@ -9,11 +9,11 @@ const STEPS = [
   },
   {
     title: 'fire_cell_days',
-    body: 'Para cada semana se cuentan las combinaciones celda–día de una cuadrícula común con al menos un foco activo. Así, la mayor resolución de VIIRS no multiplica artificialmente la actividad.',
+    body: 'Para cada semana se cuentan las combinaciones celda–día de una cuadrícula común con al menos un foco activo tipo=0 (vegetación). Así, la mayor resolución de VIIRS no multiplica artificialmente la actividad observada.',
   },
   {
-    title: 'Armonización',
-    body: 'VIIRS se calibra a la escala de MODIS usando el periodo en que ambos sensores observan a la vez (2012–2018). El resultado es una serie continua y comparable de 2001 a 2025.',
+    title: 'Integración multi-sensor y solapamiento',
+    body: 'Para mitigar el salto instrumental entre MODIS (1 km) y VIIRS (375 m), BRASA unifica la presencia celda-día. El período de solapamiento (2012–2018) permite contrastar la sensibilidad de ambos sensores sin asumir equivalencia radiométrica directa.',
   },
   {
     title: 'Climatología y anomalías',
@@ -79,10 +79,11 @@ export const Metodologia: React.FC = () => {
           <div>
             <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-[#FF7900]">Limitaciones</p>
             <ul className="mt-6 space-y-4 text-slate-300 leading-relaxed">
-              <li>La nubosidad y los horarios de paso del satélite pueden ocultar focos.</li>
-              <li>Un foco de calor no siempre es un incendio: incluye quemas agrícolas y fuentes industriales.</li>
+              <li>La nubosidad y los horarios de paso del satélite pueden ocultar focos activos.</li>
+              <li>Un foco de calor no siempre es un incendio forestal descontrolado: incluye quemas agrícolas controladas.</li>
+              <li>MODIS (1 km) y VIIRS (375 m) difieren en resolución instrumental; fire_cell_days reduce la disparidad, pero la serie pre-2012 y post-2012 debe interpretarse considerando el cambio de sensor.</li>
               <li>
-                Los niveles son estadísticos y <strong className="text-white">no constituyen alertas oficiales</strong>.
+                Los niveles son estadísticos orientativos y <strong className="text-white">no constituyen alertas oficiales</strong> ni sustituyen a las autoridades de emergencia.
               </li>
             </ul>
             <Link

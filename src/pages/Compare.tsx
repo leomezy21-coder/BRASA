@@ -78,7 +78,11 @@ export const Compare: React.FC = () => {
   const [curveView, setCurveView] = useState<'semanal' | 'acumulado'>('semanal')
   const weeklyRef = useRef<ReactECharts>(null)
 
-  const selectedRegion = regions?.find((r) => r.id === filters.provinceId) || regions?.[0]
+  const selectedRegion =
+    regions?.find((r) => r.id === filters.provinceId) ||
+    regions?.find((r) => r.id === filters.countryCode) ||
+    regions?.[0]
+  const locationName = filters.country || selectedRegion?.name || 'Ecuador'
 
   const seasonYears = useMemo(() => [...(season?.years ?? [])].sort((a, b) => a.year - b.year), [season])
   const availableYears = useMemo(() => seasonYears.map((y) => y.year).sort((a, b) => b - a), [seasonYears])
@@ -294,7 +298,7 @@ export const Compare: React.FC = () => {
         <div>
           <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-[#FF7900]">Análisis histórico</p>
           <h1 className="mt-3 text-4xl sm:text-5xl font-black tracking-tight leading-none">Año contra año</h1>
-          <p className="mt-3 text-slate-500">{selectedRegion?.name || 'Ecuador'}</p>
+          <p className="mt-3 text-slate-500">{locationName}</p>
         </div>
         <div className="flex items-center gap-3">
           {yearSelect(yearA, setYearA, COLOR_A, 'Año A')}

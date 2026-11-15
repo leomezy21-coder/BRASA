@@ -2,10 +2,14 @@ import React, { useState } from 'react'
 import { Info, X } from 'lucide-react'
 import { IS_MOCK_MODE } from '../api/client'
 
-export const MockBanner: React.FC = () => {
+interface MockBannerProps {
+  forceShow?: boolean
+}
+
+export const MockBanner: React.FC<MockBannerProps> = ({ forceShow = false }) => {
   const [dismissed, setDismissed] = useState(false)
 
-  if (!IS_MOCK_MODE || dismissed) return null
+  if ((!IS_MOCK_MODE && !forceShow) || dismissed) return null
 
   return (
     <div

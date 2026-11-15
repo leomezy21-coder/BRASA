@@ -4,13 +4,11 @@ import {
   RotateCcw,
   Search,
   Upload,
-  Circle,
   Shapes,
   ChevronDown,
 } from 'lucide-react'
 import { useFilters } from '../hooks/useFilters'
 import type { RegionsResponse, SensorType, ConfidenceLevel, DayNight } from '../types'
-import { circleToPolygonGeoJSON } from '../utils/geoUtils'
 
 interface FiltersPanelProps {
   regions: RegionsResponse | null
@@ -29,6 +27,7 @@ export const FiltersPanel: React.FC<FiltersPanelProps> = ({
     filters,
     coverageRadiusMeters,
     setCoverageRadiusMeters,
+    setCountry,
     setProvinceId,
     setCantonId,
     setYearRange,
@@ -45,8 +44,9 @@ export const FiltersPanel: React.FC<FiltersPanelProps> = ({
   const [geoJsonFileName, setGeoJsonFileName] = useState<string | null>(null)
   const [coverageMode, setCoverageMode] = useState<'circle' | 'polygon'>('circle')
 
-  const selectedRegion = regions?.find((r) => r.id === filters.provinceId) || regions?.[0]
-  const cantons = selectedRegion?.cantons || []
+  const currentCountryCode = filters.countryCode || (filters.provinceId?.length === 3 ? filters.provinceId : 'ECU')
+  const selectedCountry = regions?.find((r) => r.id === currentCountryCode) || regions?.find((r) => r.id === 'ECU') || regions?.[0]
+  const provinceOptions = selectedCountry?.cantons || []
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -109,35 +109,66 @@ export const FiltersPanel: React.FC<FiltersPanelProps> = ({
           UBICACIÓN TERRITORIAL
         </label>
         <div>
-          <span className="text-xs text-slate-400 font-medium block mb-1">País</span>
-          <input
-            type="text"
-            readOnly
-            value="Ecuador"
-            className="w-full bg-[#F4F6F9] border border-slate-200 rounded-xl px-3 py-2 text-[#0B2D5B] font-bold cursor-not-allowed text-xs"
-          />
+          <label htmlFor="country-select" className="text-xs text-slate-400 font-medium block mb-1">
+            País (Alcance Global NASA FIRMS)
+          </label>
+          <div className="relative">
+            <select
+              id="country-select"
+              value={currentCountryCode}
+              onChange={(e) => {
+                const reg = regions?.find((r) => r.id === e.target.value)
+                if (reg) {
+                  setCountry(reg.name, reg.id, reg.center)
+                }
+              }}
+              className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 pr-7 text-xs font-bold text-slate-700 focus:ring-1 focus:ring-[#FF7900] focus:outline-hidden appearance-none shadow-2xs"
+            >
+              {regions && regions.length > 0 ? (
+                regions.map((r) => (
+                  <option key={r.id} value={r.id}>
+                    {r.name} ({r.id})
+                  </option>
+                ))
+              ) : (
+                <option value="ECU">Ecuador (ECU)</option>
+              )}
+            </select>
+            <ChevronDown className="w-3.5 h-3.5 text-slate-400 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+          </div>
         </div>
 
         <div className="grid grid-cols-2 gap-2">
           <div>
             <label htmlFor="province-select" className="text-xs text-slate-400 font-medium block mb-1">
-              Provincia
+              Provincia / Región
             </label>
             <div className="relative">
               <select
                 id="province-select"
+                disabled={provinceOptions.length === 0}
                 value={filters.provinceId}
                 onChange={(e) => {
-                  const reg = regions?.find((r) => r.id === e.target.value)
-                  setProvinceId(e.target.value, reg?.center)
+                  const pId = e.target.value
+                  const prov = provinceOptions.find((p) => p.id === pId)
+                  setProvinceId(pId, prov ? [prov.lat, prov.lon] : selectedCountry?.center)
                 }}
-                className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 pr-7 text-xs font-bold text-slate-700 focus:ring-1 focus:ring-[#FF7900] focus:outline-hidden appearance-none shadow-2xs"
+                className={`w-full border border-slate-200 rounded-xl px-3 py-2 pr-7 text-xs font-bold text-slate-700 focus:ring-1 focus:ring-[#FF7900] focus:outline-hidden appearance-none shadow-2xs ${
+                  provinceOptions.length === 0 ? 'bg-slate-50 text-slate-400 cursor-not-allowed' : 'bg-white'
+                }`}
               >
-                {regions?.map((r) => (
-                  <option key={r.id} value={r.id}>
-                    {r.name}
-                  </option>
-                )) || <option value="chimborazo">Chimborazo</option>}
+                {provinceOptions.length > 0 ? (
+                  <>
+                    <option value={currentCountryCode}>(Todo el país)</option>
+                    {provinceOptions.map((p) => (
+                      <option key={p.id} value={p.id}>
+                        {p.name}
+                      </option>
+                    ))}
+                  </>
+                ) : (
+                  <option value="">(Todo el país)</option>
+                )}
               </select>
               <ChevronDown className="w-3.5 h-3.5 text-slate-400 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
             </div>
@@ -150,19 +181,36 @@ export const FiltersPanel: React.FC<FiltersPanelProps> = ({
             <div className="relative">
               <select
                 id="canton-select"
+                disabled={provinceOptions.length === 0}
                 value={filters.cantonId}
                 onChange={(e) => {
-                  const c = cantons.find((item) => item.id === e.target.value)
-                  setCantonId(e.target.value, c ? [c.lat, c.lon] : undefined)
+                  setCantonId(e.target.value)
                 }}
-                className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 pr-7 text-xs font-bold text-slate-700 focus:ring-1 focus:ring-[#FF7900] focus:outline-hidden appearance-none shadow-2xs"
+                className={`w-full border border-slate-200 rounded-xl px-3 py-2 pr-7 text-xs font-bold text-slate-700 focus:ring-1 focus:ring-[#FF7900] focus:outline-hidden appearance-none shadow-2xs ${
+                  provinceOptions.length === 0 ? 'bg-slate-50 text-slate-400 cursor-not-allowed' : 'bg-white'
+                }`}
               >
                 <option value="">(Toda la provincia)</option>
-                {cantons.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.name}
-                  </option>
-                ))}
+                {filters.provinceId === 'chimborazo' && (
+                  <>
+                    <option value="riobamba">Riobamba</option>
+                    <option value="guano">Guano</option>
+                    <option value="colta">Colta</option>
+                    <option value="alausi">Alausí</option>
+                  </>
+                )}
+                {filters.provinceId === 'pichincha' && (
+                  <>
+                    <option value="quito">Quito</option>
+                    <option value="cayambe">Cayambe</option>
+                  </>
+                )}
+                {filters.provinceId === 'guayas' && (
+                  <>
+                    <option value="guayaquil">Guayaquil</option>
+                    <option value="samborondon">Samborondón</option>
+                  </>
+                )}
               </select>
               <ChevronDown className="w-3.5 h-3.5 text-slate-400 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
             </div>
@@ -414,7 +462,7 @@ export const FiltersPanel: React.FC<FiltersPanelProps> = ({
           aria-label="Abrir panel de filtros"
         >
           <Filter className="w-4 h-4" />
-          <span>Filtros ({selectedRegion?.name})</span>
+          <span>Filtros ({selectedCountry?.name || filters.country})</span>
         </button>
 
         {mobileDrawerOpen && (

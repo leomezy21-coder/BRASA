@@ -12,7 +12,7 @@ import type { CurrentStatusResponse, SeasonResponse } from '../types'
 
 describe('Componentes UI de BRASA', () => {
   it('renderiza el banner de datos simulados', () => {
-    render(<MockBanner />)
+    render(<MockBanner forceShow={true} />)
     expect(screen.getByText(/Datos simulados de demostración/i)).toBeInTheDocument()
   })
 
@@ -104,6 +104,6 @@ describe('Componentes UI de BRASA', () => {
     expect(screen.getByText(/Mes más activo/i)).toBeInTheDocument()
     expect(screen.getByText(/Periodos inusuales 2024/i)).toBeInTheDocument()
     expect(screen.getByText(/Estado de esta semana/i)).toBeInTheDocument()
-    expect(screen.getByText(/inusual/i)).toBeInTheDocument()
+    expect(screen.getByText(/^inusual$/i)).toBeInTheDocument()
   })
 })

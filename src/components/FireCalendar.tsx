@@ -41,16 +41,17 @@ export const FireCalendar: React.FC<FireCalendarProps> = ({
       if (item.value > max) max = item.value
     })
 
-    // Años de 2001 a 2025
+    // Años de 2001 a 2025 (incluyendo semana 53 si está presente en el dataset)
     const sortedYears = Array.from(yearsSet).sort((a, b) => a - b)
-    const weeksList = Array.from({ length: 52 }, (_, i) => i + 1)
+    const maxWeek = Math.min(53, Math.max(52, ...calendar.weeks.map((w) => w.week)))
+    const weeksList = Array.from({ length: maxWeek }, (_, i) => i + 1)
 
     const data: [number, number, number][] = []
 
     calendar.weeks.forEach((item) => {
       const yIndex = sortedYears.indexOf(item.year)
       const xIndex = item.week - 1
-      if (yIndex !== -1 && xIndex >= 0 && xIndex < 52) {
+      if (yIndex !== -1 && xIndex >= 0 && xIndex < maxWeek) {
         data.push([xIndex, yIndex, item.value])
       }
     })
@@ -66,7 +67,8 @@ export const FireCalendar: React.FC<FireCalendarProps> = ({
 
   // Reproductor del calendario: recorre las semanas del año seleccionado
   const handleWeekChange = useCallback((week: number) => onSelectWeek(selectedYear, week), [onSelectWeek, selectedYear])
-  const { isPlaying, speed, togglePlay, setSpeed, setWeek } = useTimeline(selectedWeek, handleWeekChange, 52)
+  const maxWeeksInYear = weeks.length || 52
+  const { isPlaying, speed, togglePlay, setSpeed, setWeek } = useTimeline(selectedWeek, handleWeekChange, maxWeeksInYear)
 
   if (isLoading || !calendar) {
     return <ChartSkeleton height="h-96" />
@@ -270,7 +272,7 @@ export const FireCalendar: React.FC<FireCalendarProps> = ({
           <input
             type="range"
             min={1}
-            max={52}
+            max={maxWeeksInYear}
             value={selectedWeek}
             onChange={(e) => setWeek(Number(e.target.value))}
             className="w-full h-1.5 bg-slate-200 rounded-full appearance-none cursor-pointer accent-[#0B1B3D]"

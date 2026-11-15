@@ -90,6 +90,8 @@ export function useBrasaData(): BrasaDataState {
       sensor: filters.sensor,
       confidence: filters.confidence,
       daynight: filters.daynight,
+      country_code: filters.countryCode || (filters.provinceId?.length === 3 ? filters.provinceId.toUpperCase() : 'ECU'),
+      continent: filters.continent && filters.continent !== 'all' ? filters.continent : undefined,
       province_id: filters.provinceId,
       canton_id: filters.cantonId,
       geojson: filters.customGeometry?.geojson,
@@ -117,6 +119,9 @@ export function useBrasaData(): BrasaDataState {
         setIsLoading(false)
       })
   }, [
+    filters.countryCode,
+    filters.country,
+    filters.continent,
     filters.provinceId,
     filters.cantonId,
     filters.yearRange,
@@ -173,7 +178,8 @@ export function useBrasaData(): BrasaDataState {
   // Cargar focos de calor específicos para la semana y año seleccionados de forma instantánea
   useEffect(() => {
     const radius = filters.customGeometry?.radiusMeters || filters.coverageRadiusMeters || 18500
-    const cacheKey = `${filters.selectedYear}-${selectedWeek}-${filters.provinceId}-${filters.cantonId}-${filters.sensor}-${filters.confidence}-${filters.daynight}-${radius}`
+    const countryKey = filters.countryCode || 'ECU'
+    const cacheKey = `${countryKey}-${filters.selectedYear}-${selectedWeek}-${filters.provinceId}-${filters.cantonId}-${filters.sensor}-${filters.confidence}-${filters.daynight}-${radius}`
     
     // Si ya está en caché, actualizar de inmediato sin parpadeos
     if (hotspotsCacheRef.current.has(cacheKey)) {
@@ -195,6 +201,8 @@ export function useBrasaData(): BrasaDataState {
         sensor: filters.sensor,
         confidence: filters.confidence,
         daynight: filters.daynight,
+        country_code: filters.countryCode || (filters.provinceId?.length === 3 ? filters.provinceId.toUpperCase() : 'ECU'),
+        continent: filters.continent && filters.continent !== 'all' ? filters.continent : undefined,
         province_id: filters.provinceId,
         canton_id: filters.cantonId,
         year: filters.selectedYear,
@@ -220,6 +228,7 @@ export function useBrasaData(): BrasaDataState {
       }
     }
   }, [
+    filters.countryCode,
     filters.selectedYear,
     selectedWeek,
     filters.provinceId,

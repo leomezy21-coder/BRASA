@@ -130,11 +130,11 @@ export const MapView: React.FC<MapViewProps> = ({
   const { coverageRadiusMeters } = useFilters()
   const points = hotspots?.points || []
 
-  // Centro activo en tiempo real: geometría personalizada > cantón > provincia > Riobamba
+  // Centro activo en tiempo real: geometría personalizada > cantón > provincia/país > Riobamba
   const activeCenter: [number, number] =
     customGeometry?.center ??
     (canton ? [canton.lat, canton.lon] : region?.center ?? [-1.6709, -78.6545])
-  const zoom: number = 11
+  const zoom: number = canton ? 10 : (region?.zoom ?? 5)
 
   const tileUrls = {
     osm: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
@@ -157,7 +157,7 @@ export const MapView: React.FC<MapViewProps> = ({
       <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3">
         <div>
           <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-[#FF7900]">
-            Mapa · {region?.name || 'Chimborazo'}
+            Mapa · {canton ? `${canton.name}, ${region?.name}` : (region?.name || 'Ecuador')}
           </p>
           <h2 className="mt-2 text-xl sm:text-2xl font-black tracking-tight text-[#0B1B3D]">Focos detectados</h2>
           <p className="mt-1 text-sm text-slate-500">Tamaño según potencia radiativa (FRP).</p>
@@ -358,7 +358,7 @@ export const MapView: React.FC<MapViewProps> = ({
           className="flex items-center gap-1.5 font-bold text-[#0B2D5B] hover:text-[#FF7900] transition-colors"
         >
           {showHotspotsDrawer ? <ChevronDown className="w-3.5 h-3.5 text-[#FF7900]" /> : <ChevronRight className="w-3.5 h-3.5 text-[#FF7900]" />}
-          <span>Focos en la semana ({points.length})</span>
+          <span>Focos en la semana ({points.length}{points.length >= 5000 ? ' · muestra limitada a 5.000' : ''})</span>
         </button>
 
         <button
@@ -375,6 +375,9 @@ export const MapView: React.FC<MapViewProps> = ({
 
       {showHotspotsDrawer && (
         <div className="pt-2 border-t border-slate-100 max-h-48 overflow-y-auto space-y-1">
+          <p className="text-[10px] text-slate-400 pb-1">
+            Muestra de celdas activas (1°) con FRP máximo registrado por día y sensor de NASA FIRMS.
+          </p>
           {points.length === 0 ? (
             <p className="text-xs text-slate-400 py-2">No se registran focos activos en esta semana.</p>
           ) : (

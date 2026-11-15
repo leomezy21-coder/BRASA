@@ -1,0 +1,10 @@
+BRASA Validación temporal 2025 (v8)
+
+1. Extraer ZIP directamente en C:\development\projects\brasa-equipo (con -Force).
+2. Desde backend\modelo_riesgo con entorno virtual activo:
+   ..\.venv\Scripts\python.exe .\validar_2025.py
+3. Se usan datos originales 2025 de los 21 CSV MODIS y POWER 2025.
+4. Reportes bajo salidas\v8_test_independiente_2025
+
+No reentrena ni cambia Render. NO subir modelos/datasets ni credenciales a GitHub.
+La prueba de 2025 es retrospectiva, no un pronóstico del año 2026.

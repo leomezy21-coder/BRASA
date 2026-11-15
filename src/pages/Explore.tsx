@@ -41,8 +41,17 @@ export const Explore: React.FC = () => {
     refetch,
   } = useBrasaData()
 
-  const selectedRegion = regions?.find((r) => r.id === filters.provinceId) || regions?.[0]
+  const selectedRegion =
+    regions?.find((r) => r.id === filters.provinceId) ||
+    regions?.find((r) => r.id === filters.countryCode) ||
+    regions?.[0]
   const selectedCanton = selectedRegion?.cantons?.find((c) => c.id === filters.cantonId)
+  const isEcuador = (filters.countryCode || 'ECU').toUpperCase() === 'ECU'
+  const locationLabel = selectedCanton
+    ? `${selectedCanton.name}, ${selectedRegion?.name || filters.country}`
+    : isEcuador && filters.provinceId && filters.provinceId !== 'ECU'
+      ? `${selectedRegion?.name || 'Chimborazo'}, Ecuador`
+      : (filters.country || selectedRegion?.name || 'Ecuador')
 
   const handleSelectWeekAndYear = (year: number, week: number) => {
     setSelectedYear(year)
@@ -63,7 +72,7 @@ export const Explore: React.FC = () => {
           <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-[#FF7900]">Dashboard</p>
           <h1 className="mt-3 text-4xl sm:text-5xl font-black tracking-tight leading-none">Explorar</h1>
           <p className="mt-3 text-slate-500">
-            {selectedCanton ? selectedCanton.name : 'Riobamba'}, {selectedRegion?.name || 'Chimborazo'}
+            {locationLabel}
           </p>
         </div>
 

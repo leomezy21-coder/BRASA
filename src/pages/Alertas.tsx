@@ -56,7 +56,10 @@ export const Alertas: React.FC = () => {
     navigate('/explorar')
   }
 
-  const selectedRegion = regions?.find((r) => r.id === filters.provinceId) || regions?.[0]
+  const selectedRegion =
+    regions?.find((r) => r.id === filters.provinceId) ||
+    regions?.find((r) => r.id === filters.countryCode) ||
+    regions?.[0]
   const selectedCanton = selectedRegion?.cantons?.find((c) => c.id === filters.cantonId)
 
   if (isLoading || !currentStatus) {
@@ -76,8 +79,16 @@ export const Alertas: React.FC = () => {
   const climWeek = climatology?.weeks.find((w) => w.week === currentStatus.week)
   const statusYear = currentStatus.year ?? DEFAULT_STATUS_YEAR
   const level = LEVELS[currentStatus.level]
-  const regionName = selectedRegion?.name || 'Chimborazo'
-  const cantonName = selectedCanton ? selectedCanton.name : 'Riobamba'
+  const isEcuador = (filters.countryCode || 'ECU').toUpperCase() === 'ECU'
+  const regionName = isEcuador
+    ? (selectedRegion?.name || 'Chimborazo')
+    : (filters.country || selectedRegion?.name || 'Territorio seleccionado')
+  const cantonName = selectedCanton ? selectedCanton.name : isEcuador ? 'Riobamba' : regionName
+  const displayLocation = selectedCanton
+    ? `${selectedCanton.name}, ${regionName}`
+    : isEcuador && filters.provinceId && filters.provinceId !== 'ECU'
+      ? `${selectedRegion?.name || 'Chimborazo'}, Ecuador`
+      : (filters.country || regionName)
   const percentile = Math.min(100, Math.max(0, currentStatus.percentile))
 
   const headline = {
@@ -99,8 +110,8 @@ export const Alertas: React.FC = () => {
   ]
 
   const context = [
-    { label: 'Provincia', value: regionName },
-    { label: 'Cantón', value: cantonName },
+    { label: isEcuador ? 'Provincia / Región' : 'País', value: regionName },
+    { label: isEcuador ? 'Cantón' : 'Ámbito', value: cantonName },
     { label: 'Semana ISO', value: `${currentStatus.week} · ${statusYear}` },
     { label: 'Sensores', value: 'MODIS 1 km + VIIRS 375 m' },
   ]
@@ -120,7 +131,7 @@ export const Alertas: React.FC = () => {
           <Eyebrow>Semáforo estadístico · {formatWeekFriendly(statusYear, currentStatus.week)}</Eyebrow>
           <h1 className="mt-3 text-4xl sm:text-5xl font-black tracking-tight leading-none">Alertas</h1>
           <p className="mt-3 text-slate-500">
-            {cantonName}, {regionName}
+            {displayLocation}
           </p>
         </div>
 

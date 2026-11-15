@@ -1,0 +1,7 @@
+/cache_power/
+/datos/
+/salidas/
+*.db
+*.db-wal
+*.db-shm
+*.joblib

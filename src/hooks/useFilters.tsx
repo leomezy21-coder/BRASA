@@ -16,6 +16,9 @@ export interface FiltersContextType {
   coverageRadiusMeters: number
   setSelectedWeek: (week: number) => void
   setCoverageRadiusMeters: (radius: number) => void
+  setCountry: (name: string, code: string, center?: [number, number]) => void
+  setCountryCode: (code: string) => void
+  setContinent: (continent: string) => void
   setProvinceId: (id: string, center?: [number, number]) => void
   setCantonId: (id: string, center?: [number, number]) => void
   setYearRange: (range: [number, number]) => void
@@ -33,6 +36,8 @@ const DEFAULT_RADIUS = 18500
 
 const DEFAULT_FILTERS: FilterState = {
   country: 'Ecuador',
+  countryCode: 'ECU',
+  continent: 'all',
   provinceId: 'chimborazo',
   cantonId: 'riobamba',
   yearRange: [2001, 2025],
@@ -75,6 +80,40 @@ export const FiltersProvider: React.FC<{ children: React.ReactNode }> = ({ child
             : prev.customGeometry,
       }
     })
+  }
+
+  const setCountry = (name: string, code: string, center?: [number, number]) => {
+    setFilters((prev) => {
+      const newCenter = center || prev.customGeometry?.center || [-1.6709, -78.6545]
+      const radius = prev.coverageRadiusMeters || DEFAULT_RADIUS
+      const isEcuador = code.toUpperCase() === 'ECU'
+      return {
+        ...prev,
+        country: name,
+        countryCode: code.toUpperCase(),
+        provinceId: isEcuador ? 'chimborazo' : code.toUpperCase(),
+        cantonId: isEcuador ? 'riobamba' : '',
+        customGeometry: {
+          type: 'circle',
+          center: newCenter,
+          radiusMeters: radius,
+          geojson: circleToPolygonGeoJSON(newCenter[0], newCenter[1], radius),
+        },
+      }
+    })
+  }
+
+  const setCountryCode = (code: string) => {
+    setFilters((prev) => ({
+      ...prev,
+      countryCode: code.toUpperCase(),
+      provinceId: code.toUpperCase() === 'ECU' ? prev.provinceId || 'chimborazo' : code.toUpperCase(),
+      cantonId: code.toUpperCase() === 'ECU' ? prev.cantonId : '',
+    }))
+  }
+
+  const setContinent = (continent: string) => {
+    setFilters((prev) => ({ ...prev, continent }))
   }
 
   const setProvinceId = (provinceId: string, center?: [number, number]) => {
@@ -154,6 +193,9 @@ export const FiltersProvider: React.FC<{ children: React.ReactNode }> = ({ child
       coverageRadiusMeters,
       setSelectedWeek,
       setCoverageRadiusMeters,
+      setCountry,
+      setCountryCode,
+      setContinent,
       setProvinceId,
       setCantonId,
       setYearRange,

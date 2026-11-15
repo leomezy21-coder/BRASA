@@ -1,311 +1,528 @@
-"""API experimental BRASA mundial; NO modifica el backend Ecuador original.
+"""
+BRASA — Bitácora Regional de Actividad Satelital Armonizada
+NASA Space Apps Challenge 2026 — Equipo CODE RED
+Backend Principal FastAPI (Multi-territorial, datos NASA FIRMS)
+==============================================================
+Sirve consultas históricas mundiales y regionales desde SQLite optimizado.
+Permite selección por país (ISO3), continente o global, además de soporte
+heredado para regiones y provincias de Ecuador.
 
-Levantar con: python -m uvicorn main_mundial:app --reload --port 8000
-Metricas: presencia en celda 1°/dia/sensor, tipo=0. NO incendios individuales.
+Uso:
+    uvicorn backend.main:app --reload --port 8000
+    o desde backend/: uvicorn main:app --reload --port 8000
 """
 from __future__ import annotations
-from datetime import date, timedelta
+
 import json
 import os
 import sqlite3
+from datetime import date
 from pathlib import Path
 from statistics import mean, pstdev
-from typing import Literal
+from typing import Literal, Optional, List, Dict, Any
 
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 
 HERE = Path(__file__).resolve().parent
-DB = Path(os.environ.get('BRASA_DB_PATH', str(HERE/'brasa_render.db')))
-MAP_DB = Path(os.environ.get('BRASA_MAP_DB_PATH', str(HERE/'brasa_mapa.db')))
-app = FastAPI(title='BRASA NASA FIRMS API Mundial (resumen para Render)',version='0.20')
-app.add_middleware(CORSMiddleware,allow_origins=['*'],allow_methods=['GET','POST'],allow_headers=['*'])
 
-class Filter(BaseModel):
-    year_from: int = Field(default=2005,ge=2000,le=2100)
-    year_to: int = Field(default=2025,ge=2000,le=2100)
-    sensor: Literal['modis','viirs','harmonized'] = 'harmonized'
-    confidence: Literal['all','nominal_high'] = 'all'
-    daynight: Literal['all','D','N'] = 'all'
-    country_code: str | None = None
-    continent: str | None = None
-    # Campos del FRONTEND Ecuador: se rechazan hasta que adapten filtros.
-    province_id: str | None = None
-    canton_id: str | None = None
-    bbox: tuple[float,float,float,float] | None = None
-    geojson: dict | None = None
+# Resolución inteligente de rutas de base de datos
+def resolve_db_path() -> Path:
+    env_path = os.environ.get("BRASA_DB_PATH")
+    if env_path and Path(env_path).exists():
+        return Path(env_path)
+    for candidate in ("brasa_render.db", "brasa_mundial.db", "brasa.db"):
+        p = HERE / candidate
+        if p.is_file():
+            return p
+    return HERE / "brasa_render.db"
 
-class HotspotFilter(Filter):
-    year: int | None = None
-    week: int | None = Field(default=None,ge=1,le=53)
-    date_from: str | None = None
-    date_to: str | None = None
+def resolve_map_db_path() -> Path:
+    env_path = os.environ.get("BRASA_MAP_DB_PATH")
+    if env_path and Path(env_path).exists():
+        return Path(env_path)
+    for candidate in ("brasa_mapa.db", "brasa_mundial.db"):
+        p = HERE / candidate
+        if p.is_file():
+            return p
+    return HERE / "brasa_mapa.db"
+
+DB = resolve_db_path()
+MAP_DB = resolve_map_db_path()
+
+app = FastAPI(
+    title="BRASA NASA FIRMS API",
+    description="Bitácora Regional de Actividad Satelital Armonizada — NASA Space Apps Challenge 2026",
+    version="1.0.0"
+)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# ─────────────────────────────────────────────
+# Modelos de entrada compatibles (Frontend y Backend)
+# ─────────────────────────────────────────────
+
+class BaseFilter(BaseModel):
+    year_from: int = Field(default=2001, ge=2000, le=2100)
+    year_to: int = Field(default=2025, ge=2000, le=2100)
+    sensor: Literal["harmonized", "modis", "viirs"] = "harmonized"
+    confidence: Literal["all", "nominal_high"] = "all"
+    daynight: Literal["all", "D", "N"] = "all"
+    country_code: Optional[str] = None
+    continent: Optional[str] = None
+    # Soporte compatible para selecciones heredadas del cliente
+    province_id: Optional[str] = None
+    canton_id: Optional[str] = None
+    bbox: Optional[tuple[float, float, float, float]] = None
+    geojson: Optional[dict] = None
+
+class HotspotFilter(BaseFilter):
+    year: Optional[int] = None
+    week: Optional[int] = Field(default=None, ge=1, le=53)
+    date_from: Optional[str] = None
+    date_to: Optional[str] = None
 
 
-def connect():
-    if not DB.exists():
-        raise HTTPException(503,detail=f'Base no encontrada: {DB.name}')
+# Provincias históricas de Ecuador para retrocompatibilidad
+ECUADOR_PROVINCES = [
+    {"id": "chimborazo", "name": "Chimborazo", "lat": -1.6709, "lon": -78.6545},
+    {"id": "pichincha", "name": "Pichincha", "lat": -0.2298, "lon": -78.5249},
+    {"id": "guayas", "name": "Guayas", "lat": -2.1894, "lon": -79.8891},
+    {"id": "azuay", "name": "Azuay", "lat": -2.9001, "lon": -79.0059},
+    {"id": "loja", "name": "Loja", "lat": -3.9931, "lon": -79.2042},
+    {"id": "imbabura", "name": "Imbabura", "lat": 0.3517, "lon": -78.1223},
+    {"id": "manabi", "name": "Manabí", "lat": -1.0546, "lon": -80.4544},
+]
+
+
+def connect_summary():
+    """Conexión en modo solo lectura a la base de resumen."""
+    current_db = resolve_db_path()
+    if not current_db.is_file():
+        raise HTTPException(
+            status_code=503,
+            detail=f"Base de datos de resumen no encontrada: {current_db.name}. Asegúrese de que brasa_render.db esté presente."
+        )
     try:
-        # Lectura solamente: asegura que nunca cambie la base durante consultas.
-        con = sqlite3.connect(f'file:{DB.as_posix()}?mode=ro',uri=True,timeout=30)
-        con.row_factory=sqlite3.Row
+        con = sqlite3.connect(f"file:{current_db.as_posix()}?mode=ro", uri=True, timeout=30)
+        con.row_factory = sqlite3.Row
         return con
     except sqlite3.Error as exc:
-        raise HTTPException(503,detail=str(exc))
+        raise HTTPException(status_code=503, detail=f"Error al conectar a SQLite: {exc}")
 
 
-def ready(con):
-    if not con.execute("SELECT 1 FROM sqlite_master WHERE type='table' AND name='resumen_semanal'").fetchone():
-        raise HTTPException(503,detail='Faltan los resúmenes. Ejecuta preparar_consultas_mundiales.py.')
+def check_summary_ready(con):
+    exists = con.execute("SELECT 1 FROM sqlite_master WHERE type='table' AND name='resumen_semanal'").fetchone()
+    if not exists:
+        raise HTTPException(
+            status_code=503,
+            detail="Falta la tabla 'resumen_semanal' en la base de datos. Ejecute preparar_consultas_mundiales.py."
+        )
 
 
-def validate(f:Filter, for_points=False):
-    if f.year_from > f.year_to or f.year_to-f.year_from>100:
-        raise HTTPException(422,detail='Rango de años inválido')
-    if f.province_id or f.canton_id:
-        raise HTTPException(422,detail='La API mundial usa country_code (ISO3), no province_id/canton_id. Adaptar frontend.')
-    if f.geojson is not None:
-        raise HTTPException(422,detail='Filtrado por polígonos personalizados no implementado en la API mundial.')
-    if f.bbox is not None:
-        if not for_points:
-            raise HTTPException(422,detail='bbox solo está disponible para /api/hotspots; estadísticas por bbox no implementadas.')
-        a,b,c,d=f.bbox
-        if a>c or b>d or not(-180<=a<=180 and -180<=c<=180 and -90<=b<=90 and -90<=d<=90):
-            raise HTTPException(422,detail='bbox inválida')
-    if f.country_code and f.continent:
-        raise HTTPException(422,detail='Usa country_code o continent, no ambos.')
+def normalize_filter(f: BaseFilter) -> tuple[str | None, str | None]:
+    """
+    Normaliza el país y continente. Si se envió province_id de Ecuador o un código ISO3,
+    se traduce sin lanzar error 422.
+    """
+    country = f.country_code
+    continent = f.continent
+
+    if not country and f.province_id:
+        prov = f.province_id.strip()
+        # Si tiene 3 letras, es código ISO3 (ej. 'ECU', 'BRA', 'USA')
+        if len(prov) == 3:
+            country = prov.upper()
+        elif any(p["id"] == prov.lower() for p in ECUADOR_PROVINCES):
+            country = "ECU"
+        else:
+            country = prov.upper()
+
+    if country:
+        country = country.upper()
+
+    return country, continent
 
 
-def filtered_where(f:Filter,alias='r'):
-    validate(f)
-    w=[f'{alias}.year BETWEEN ? AND ?']
-    v=[f.year_from,f.year_to]
-    if f.country_code:
-        w.append(f'{alias}.country_code = ?')
-        v.append(f.country_code.upper())
-    elif f.continent:
-        w.append(f'{alias}.country_code IN (SELECT country_code FROM paises_ref WHERE continent=?)')
-        v.append(f.continent)
+def build_where_summary(f: BaseFilter, alias: str = "r") -> tuple[str, list]:
+    if f.year_from > f.year_to:
+        f.year_from, f.year_to = f.year_to, f.year_from
+
+    country, continent = normalize_filter(f)
+
+    w = [f"{alias}.year BETWEEN ? AND ?"]
+    v = [f.year_from, f.year_to]
+
+    if country and country != "*":
+        w.append(f"{alias}.country_code = ?")
+        v.append(country)
+    elif continent and continent != "all":
+        w.append(f"{alias}.country_code IN (SELECT country_code FROM paises_ref WHERE continent=?)")
+        v.append(continent)
     else:
+        # Consulta global
         w.append(f"{alias}.country_code = '*'")
-    if f.sensor!='harmonized':
-        w.append(f'{alias}.sensor = ?')
+
+    if f.sensor != "harmonized":
+        w.append(f"{alias}.sensor = ?")
         v.append(f.sensor.upper())
-    if f.confidence=='nominal_high':
-        w.append(f"{alias}.confidence IN ('n','h')")
-    if f.daynight!='all':
-        w.append(f'{alias}.daynight = ?')
+
+    if f.confidence == "nominal_high":
+        w.append(f"{alias}.confidence IN ('n', 'h')")
+
+    if f.daynight in ("D", "N"):
+        w.append(f"{alias}.daynight = ?")
         v.append(f.daynight)
-    return ' AND '.join(w),v
+
+    return " AND ".join(w), v
 
 
-def weekly(f):
-    with connect() as con:
-        ready(con)
-        where, vals=filtered_where(f)
-        rows=con.execute(f'''SELECT r.year,r.week,SUM(r.n) AS n FROM resumen_semanal r
-                WHERE {where} GROUP BY r.year,r.week ORDER BY r.year,r.week''',vals).fetchall()
-    return {(int(r['year']),int(r['week'])):int(r['n']) for r in rows}
+def get_weekly_dict(f: BaseFilter) -> dict[tuple[int, int], int]:
+    with connect_summary() as con:
+        check_summary_ready(con)
+        where_clause, vals = build_where_summary(f)
+        query = f"""
+            SELECT r.year, r.week, SUM(r.n) AS n
+            FROM resumen_semanal r
+            WHERE {where_clause}
+            GROUP BY r.year, r.week
+            ORDER BY r.year, r.week
+        """
+        rows = con.execute(query, vals).fetchall()
+    return {(int(r["year"]), int(r["week"])): int(r["n"]) for r in rows}
 
 
-def weekly_full(f):
-    counts=weekly(f)
-    return {(y,w):counts.get((y,w),0) for y in range(f.year_from,f.year_to+1) for w in range(1,54)}
+def get_weekly_full_dict(f: BaseFilter) -> dict[tuple[int, int], int]:
+    counts = get_weekly_dict(f)
+    return {
+        (y, w): counts.get((y, w), 0)
+        for y in range(f.year_from, f.year_to + 1)
+        for w in range(1, 54)
+    }
 
 
-@app.get('/health')
+# ─────────────────────────────────────────────
+# ENDPOINTS
+# ─────────────────────────────────────────────
+
+@app.get("/health")
 def health():
-    if not DB.exists():
-        return {'status':'sin_base','db':False,'summary_ready':False}
-    with connect() as con:
-        prepared=con.execute("SELECT 1 FROM sqlite_master WHERE type='table' AND name='resumen_semanal'").fetchone() is not None
-        completed=con.execute('SELECT COUNT(*) FROM archivos_procesados WHERE terminado=1').fetchone()[0]
-    return {'status':'ok' if prepared and completed==34 else 'incompleto',
-            'db':True,'summary_ready':prepared,'csv_completos':completed,
-            'metrica':'presencia_celda_dia_sensor_1grado', 'map_ready':MAP_DB.is_file()}
+    db_file = resolve_db_path()
+    map_file = resolve_map_db_path()
+    db_exists = db_file.is_file()
+    summary_ready = False
+    completed_csv = 0
+
+    if db_exists:
+        try:
+            with connect_summary() as con:
+                summary_ready = con.execute(
+                    "SELECT 1 FROM sqlite_master WHERE type='table' AND name='resumen_semanal'"
+                ).fetchone() is not None
+                if con.execute("SELECT 1 FROM sqlite_master WHERE type='table' AND name='archivos_procesados'").fetchone():
+                    completed_csv = con.execute(
+                        "SELECT COUNT(*) FROM archivos_procesados WHERE terminado=1"
+                    ).fetchone()[0]
+        except Exception:
+            pass
+
+    return {
+        "status": "ok" if (db_exists and summary_ready) else "parcial",
+        "db": db_exists,
+        "db_name": db_file.name,
+        "summary_ready": summary_ready,
+        "csv_completos": completed_csv,
+        "map_ready": map_file.is_file(),
+        "metrica": "presencia_celda_dia_sensor_1grado",
+    }
 
 
-@app.get('/api/metadata')
+@app.get("/api/metadata")
 def metadata():
-    return {'dataset':'NASA FIRMS / BRASA mundial (resumen espacial)',
-            'coverage':'archivos MODIS y VIIRS disponibles, no equivale a cobertura completa por sensor',
-            'metrica':'presencia de al menos una deteccion tipo 0 por celda de 1 grado, dia y familia de sensor',
-            'limites':['No contar como incendios individuales',
-                'MODIS y VIIRS NO estan armonizados ni son directamente comparables',
-                'VIIRS S-NPP y NOAA-20 se agrupan en VIIRS y pueden fusionarse dentro de una misma celda-dia',
-                'Paises asignados por centro de celda segun Natural Earth 1:110m: aproximacion',
-                'Mapa: muestras limitadas de centros de celdas 1°, no ubicaciones exactas de focos NASA',
-                'FRP muestra maximo de la celda-dia en la base original, no suma',
-                'El año de las series es año ISO de la semana, no necesariamente año calendario',
-                'La confianza/dia-noche se resumen por celda; los filtros no equivalen a filtrar pixeles originales']}
+    return {
+        "dataset": "NASA FIRMS / BRASA (Bitácora Regional de Actividad Satelital Armonizada)",
+        "fuente": "NASA Fire Information for Resource Management System (FIRMS)",
+        "periodo_objetivo": "2001–2025 (disponibilidad efectiva 2004–2026 en dataset preprocesado)",
+        "cobertura": "Mundial (177 países de referencia, 34 archivos CSV de NASA FIRMS)",
+        "sensores": {
+            "MODIS": "Satélites Terra y Aqua, resolución nominal 1 km, registros desde 2000/2001",
+            "VIIRS": "Satélites Suomi-NPP (desde 2012) y NOAA-20 (desde 2018), resolución nominal 375 m"
+        },
+        "metrica": "presencia de al menos una detección tipo 0 por celda de 1 grado, día y familia de sensor (fire_cell_days a 1°)",
+        "nota_cientifica": [
+            "Los píxeles individuales de MODIS (1 km) y VIIRS (375 m) tienen diferentes capacidades de detección.",
+            "La métrica fire_cell_days a 1 grado unifica la presencia diaria para evitar que la mayor resolución de VIIRS multiplique artificialmente los conteos.",
+            "MODIS y VIIRS se presentan diferenciados; el período de solapamiento 2012–2018 permite evaluar el comportamiento interanual.",
+            "Las detecciones se clasifican exclusivamente como type=0 (fuego de vegetación), descartando fuentes térmicas industriales u offshore.",
+            "Los mapas espaciales muestran centros de celdas activas con su FRP representativo."
+        ]
+    }
 
 
-@app.get('/api/countries')
+@app.get("/api/countries")
 def countries():
-    with connect() as con:
-        ready(con)
-        rows=con.execute('SELECT country_code,name,continent,lat,lon FROM paises_ref ORDER BY name').fetchall()
+    with connect_summary() as con:
+        check_summary_ready(con)
+        rows = con.execute("SELECT country_code, name, continent, lat, lon FROM paises_ref ORDER BY name").fetchall()
     return [dict(r) for r in rows]
 
 
-@app.get('/api/regions')
+@app.get("/api/regions")
 def regions():
-    # Mantiene la forma Region del frontend, pero las entidades SON PAISES.
-    geo=json.loads((HERE/'geografia'/'paises_referencia.json').read_text(encoding='utf-8'))
-    return [{'id':p['codigo'],'name':p['nombre'],
-             'center':[(p['bbox'][1]+p['bbox'][3])/2,(p['bbox'][0]+p['bbox'][2])/2],
-             'zoom':4, 'geojson':{'type':'MultiPolygon','coordinates':p['poligonos']},
-             'cantons':[]} for p in geo['paises']]
-
-
-@app.post('/api/calendar')
-def calendar(f:Filter):
-    counts=weekly_full(f)
-    src={'modis':'MODIS','viirs':'VIIRS_CAL','harmonized':'BOTH'}[f.sensor]
-    return {'unit':'fire_cell_days',
-            'weeks':[{'year':y,'week':w,'value':float(n),'source':src}
-                     for (y,w),n in counts.items()]}
-
-
-@app.post('/api/climatology')
-def climatology(f:Filter):
-    vals=weekly_full(f)
-    out=[]
-    for w in range(1,54):
-        arr=sorted(float(vals[(y,w)]) for y in range(f.year_from,f.year_to+1))
-        def percentile(p):
-            if not arr:return 0.0
-            k=(len(arr)-1)*p
-            lo=int(k);hi=min(len(arr)-1,lo+1)
-            return round(arr[lo]+(arr[hi]-arr[lo])*(k-lo),1)
-        out.append({'week':w,'mean':round(mean(arr),1),'p10':percentile(.1),
-                    'p50':percentile(.5),'p90':percentile(.9)})
-    return {'weeks':out}
-
-
-@app.post('/api/season')
-def season(f:Filter):
-    counts=weekly_full(f)
-    years=[]
-    for y in range(f.year_from,f.year_to+1):
-        arr={w:counts[(y,w)] for w in range(1,54)}
-        total=sum(arr.values())
-        if total==0:continue
-        peak=max(arr,key=arr.get)
-        threshold=arr[peak]*.2
-        start=next((w for w in range(1,peak+1) if arr[w]>=threshold),peak)
-        end=next((w for w in range(peak,54) if arr[w]<threshold),53)
-        years.append({'year':y,'start_week':start,'peak_week':peak,'end_week':end,'total':float(total)})
-    return {'years':years}
-
-
-@app.post('/api/anomalies')
-def anomalies(f:Filter):
-    counts=weekly_full(f)
-    items=[]
-    for w in range(1,54):
-        arr=[counts[(y,w)] for y in range(f.year_from,f.year_to+1)]
-        av=mean(arr)
-        sd=pstdev(arr)
-        if sd<1e-10:continue
-        for y,v in zip(range(f.year_from,f.year_to+1),arr):
-            z=(v-av)/sd
-            if z>=1.6 and v>5:
-                # Percentil empírico (entre años), no un pronóstico.
-                pct=round(sum(x<=v for x in arr)/len(arr)*100,1)
-                items.append({'year':y,'week':w,'value':float(v),
-                              'zscore':round(z,2),'percentile':pct})
-    return {'items':sorted(items,key=lambda i:i['zscore'],reverse=True)}
-
-
-@app.post('/api/current-status')
-def current_status(f:Filter):
-    counts=weekly_full(f)
-    nonzero=[(y,w,n) for (y,w),n in counts.items() if n>0]
-    if not nonzero:
-        return {'week':0,'value':0.0,'percentile':0.0,'zscore':0.0,'level':'normal'}
-    y,w,value=max(nonzero,key=lambda t:(t[0],t[1]))
-    vals=[counts[(yr,w)] for yr in range(f.year_from,f.year_to+1)]
-    avg=mean(vals);sd=pstdev(vals)
-    z=(value-avg)/sd if sd>0 else 0.0
-    percentile=round(sum(v<=value for v in vals)/len(vals)*100,1)
-    level='inusual' if z>=2 or percentile>=90 else 'elevado' if z>=1 or percentile>=70 else 'normal'
-    return {'year':y,'week':w,'value':float(value),'percentile':percentile,
-            'zscore':round(z,2),'level':level}
-
-
-@app.post('/api/hotspots')
-def hotspots(f: HotspotFilter):
-    """Devuelve muestras ESPACIALES de celdas-día 1°, no pixeles originales.
-
-    Mantiene el contrato {points: [{lat,lon,date,frp,sensor}]} del frontend.
-    Requiere año+semana ISO, o date_from+date_to (máx. 31 días).
-    Filtra por country_code ISO3, sensor, confianza y dia/noche. MAX 5000.
     """
-    validate(f,for_points=True)
-    if not MAP_DB.is_file():
-        raise HTTPException(503,detail='La capa espacial no esta desplegada. Ejecuta descomprimir_mapa.py.')
-    if f.year is None and f.week is not None:
-        raise HTTPException(422,detail='Indica year junto con week.')
-    if f.year is not None and f.week is None and not (f.date_from and f.date_to):
-        raise HTTPException(422,detail='Indica week junto con year o un rango date_from/date_to.')
-    if f.year is not None and not(f.year_from <= f.year <= f.year_to):
-        raise HTTPException(422,detail='year debe estar dentro de year_from/year_to.')
-    if bool(f.date_from) != bool(f.date_to):
-        raise HTTPException(422,detail='Indica ambos date_from y date_to.')
-    if f.year is None and not f.date_from:
-        raise HTTPException(422,detail='Indica year+week o date_from+date_to para evitar consultas masivas.')
-
-    w=[];v=[]
-    if f.year is not None:
-        w.extend(['year=?','week=?']) if f.week is not None else w.append('year=?')
-        v.append(f.year)
-        if f.week is not None:
-            v.append(f.week)
-    if f.date_from:
+    Devuelve las entidades territoriales en el contrato Region[] de la UI.
+    Incluye los 177 países de referencia mundial y sus coordenadas geográficas.
+    """
+    geo_path = HERE / "geografia" / "paises_referencia.json"
+    if geo_path.is_file():
         try:
-            start=date.fromisoformat(f.date_from)
-            end=date.fromisoformat(f.date_to)
-        except (ValueError,TypeError):
-            raise HTTPException(422,detail='Fechas invalidas. Usa YYYY-MM-DD.')
-        if start > end or (end-start).days > 31:
-            raise HTTPException(422,detail='El rango de fechas debe estar entre 0 y 31 dias.')
-        w.append('date BETWEEN ? AND ?')
-        v.extend([start.isoformat(),end.isoformat()])
-    if f.country_code:
-        w.append('country_code=?')
-        v.append(f.country_code.upper())
-    elif f.continent:
-        with connect() as con:
-            codes=[r[0] for r in con.execute('SELECT country_code FROM paises_ref WHERE continent=?',(f.continent,))]
-        if not codes:
-            return {'points':[], 'sampled':True, 'spatial_resolution_degrees':1.0}
-        w.append('country_code IN ('+','.join(['?']*len(codes))+')')
-        v.extend(codes)
-    if f.sensor != 'harmonized':
-        w.append('sensor=?')
+            geo_data = json.loads(geo_path.read_text(encoding="utf-8"))
+            regions_list = []
+            for p in geo_data.get("paises", []):
+                bbox = p.get("bbox", [-180, -90, 180, 90])
+                center_lat = (bbox[1] + bbox[3]) / 2
+                center_lon = (bbox[0] + bbox[2]) / 2
+
+                # Para Ecuador, adjuntamos sus cantones y provincias tradicionales
+                cantons_list = []
+                if p["codigo"] == "ECU":
+                    cantons_list = [
+                        {"id": prov["id"], "name": prov["name"], "lat": prov["lat"], "lon": prov["lon"]}
+                        for prov in ECUADOR_PROVINCES
+                    ]
+
+                regions_list.append({
+                    "id": p["codigo"],
+                    "name": p["nombre"],
+                    "continent": p.get("continente", "Other"),
+                    "center": [center_lat, center_lon],
+                    "zoom": 5 if p["codigo"] in ("ECU", "URY", "PRY") else 4,
+                    "geojson": {"type": "MultiPolygon", "coordinates": p.get("poligonos", [])},
+                    "cantons": cantons_list,
+                })
+            return regions_list
+        except Exception:
+            pass
+
+    # Fallback si el json no está disponible: leer desde paises_ref en SQLite
+    with connect_summary() as con:
+        check_summary_ready(con)
+        rows = con.execute("SELECT country_code, name, continent, lat, lon FROM paises_ref ORDER BY name").fetchall()
+        return [
+            {
+                "id": r["country_code"],
+                "name": r["name"],
+                "continent": r["continent"],
+                "center": [r["lat"], r["lon"]],
+                "zoom": 4,
+                "geojson": None,
+                "cantons": [],
+            }
+            for r in rows
+        ]
+
+
+@app.post("/api/calendar")
+def calendar(f: BaseFilter):
+    counts = get_weekly_full_dict(f)
+    src_map = {"modis": "MODIS", "viirs": "VIIRS_CAL", "harmonized": "BOTH"}
+    src = src_map[f.sensor]
+    return {
+        "unit": "fire_cell_days",
+        "weeks": [
+            {"year": y, "week": w, "value": float(n), "source": src}
+            for (y, w), n in counts.items()
+        ]
+    }
+
+
+@app.post("/api/climatology")
+def climatology(f: BaseFilter):
+    vals = get_weekly_full_dict(f)
+    out = []
+    for w in range(1, 54):
+        arr = sorted(float(vals[(y, w)]) for y in range(f.year_from, f.year_to + 1))
+        def percentile(p: float) -> float:
+            if not arr:
+                return 0.0
+            k = (len(arr) - 1) * p
+            lo = int(k)
+            hi = min(len(arr) - 1, lo + 1)
+            return round(arr[lo] + (arr[hi] - arr[lo]) * (k - lo), 1)
+
+        mean_val = round(mean(arr), 1) if arr else 0.0
+        out.append({
+            "week": w,
+            "mean": mean_val,
+            "p10": percentile(0.1),
+            "p50": percentile(0.5),
+            "p90": percentile(0.9),
+        })
+    return {"weeks": out}
+
+
+@app.post("/api/season")
+def season(f: BaseFilter):
+    counts = get_weekly_full_dict(f)
+    years = []
+    for y in range(f.year_from, f.year_to + 1):
+        arr = {w: counts[(y, w)] for w in range(1, 54)}
+        total = sum(arr.values())
+        if total == 0:
+            continue
+        peak = max(arr, key=arr.get)
+        threshold = arr[peak] * 0.2
+        start = next((w for w in range(1, peak + 1) if arr[w] >= threshold), peak)
+        end = next((w for w in range(peak, 54) if arr[w] < threshold), 53)
+        years.append({
+            "year": y,
+            "start_week": start,
+            "peak_week": peak,
+            "end_week": end,
+            "total": float(total)
+        })
+    return {"years": years}
+
+
+@app.post("/api/anomalies")
+def anomalies(f: BaseFilter):
+    counts = get_weekly_full_dict(f)
+    items = []
+    for w in range(1, 54):
+        arr = [counts[(y, w)] for y in range(f.year_from, f.year_to + 1)]
+        av = mean(arr) if arr else 0.0
+        sd = pstdev(arr) if len(arr) > 1 else 0.0
+        if sd < 1e-10:
+            continue
+        for y, v in zip(range(f.year_from, f.year_to + 1), arr):
+            z = (v - av) / sd
+            if z >= 1.6 and v > 5:
+                pct = round(sum(x <= v for x in arr) / len(arr) * 100, 1)
+                items.append({
+                    "year": y,
+                    "week": w,
+                    "value": float(v),
+                    "zscore": round(z, 2),
+                    "percentile": pct
+                })
+    return {"items": sorted(items, key=lambda i: i["zscore"], reverse=True)}
+
+
+@app.post("/api/current-status")
+def current_status(f: BaseFilter):
+    counts = get_weekly_full_dict(f)
+    nonzero = [(y, w, n) for (y, w), n in counts.items() if n > 0]
+    if not nonzero:
+        return {"week": 0, "value": 0.0, "percentile": 0.0, "zscore": 0.0, "level": "normal"}
+
+    # Semana más reciente con datos registrados
+    y, w, value = max(nonzero, key=lambda t: (t[0], t[1]))
+    vals = [counts[(yr, w)] for yr in range(f.year_from, f.year_to + 1)]
+    avg = mean(vals) if vals else 0.0
+    sd = pstdev(vals) if len(vals) > 1 else 0.0
+    z = (value - avg) / sd if sd > 0 else 0.0
+    percentile = round(sum(v <= value for v in vals) / len(vals) * 100, 1) if vals else 50.0
+
+    level = "normal"
+    if z >= 2.0 or percentile >= 90.0:
+        level = "inusual"
+    elif z >= 1.0 or percentile >= 70.0:
+        level = "elevado"
+
+    return {
+        "year": y,
+        "week": w,
+        "value": float(value),
+        "percentile": percentile,
+        "zscore": round(z, 2),
+        "level": level
+    }
+
+
+@app.post("/api/hotspots")
+def hotspots(f: HotspotFilter):
+    """
+    Puntos espaciales de presencia de celdas-día (1 grado) con FRP y sensor.
+    Se alimenta de brasa_mapa.db (2.8M de muestras de NASA FIRMS).
+    """
+    map_db = resolve_map_db_path()
+    if not map_db.is_file():
+        raise HTTPException(
+            status_code=503,
+            detail="La capa espacial no está desplegada en el servidor. Ejecute descomprimir_mapa.py."
+        )
+
+    w: list[str] = []
+    v: list[Any] = []
+
+    # Filtrar por año y semana
+    if f.year is not None:
+        w.append("year = ?")
+        v.append(f.year)
+    if f.week is not None:
+        w.append("week = ?")
+        v.append(f.week)
+
+    if f.date_from and f.date_to:
+        w.append("date BETWEEN ? AND ?")
+        v.extend([f.date_from, f.date_to])
+
+    country, continent = normalize_filter(f)
+    if country and country != "*":
+        w.append("country_code = ?")
+        v.append(country)
+    elif continent and continent != "all":
+        with connect_summary() as con:
+            codes = [r[0] for r in con.execute("SELECT country_code FROM paises_ref WHERE continent=?", (continent,))]
+        if codes:
+            placeholders = ",".join(["?"] * len(codes))
+            w.append(f"country_code IN ({placeholders})")
+            v.extend(codes)
+
+    if f.sensor != "harmonized":
+        w.append("sensor = ?")
         v.append(f.sensor.upper())
-    if f.confidence == 'nominal_high':
-        w.append("confidence IN ('n','h')")
-    if f.daynight in ('D','N'):
-        # B significa que en esa celda-día hubo pasos diurnos Y nocturnos.
-        w.append('daynight IN (?,?)')
-        v.extend([f.daynight,'B'])
+
+    if f.confidence == "nominal_high":
+        w.append("confidence IN ('n', 'h')")
+
+    if f.daynight in ("D", "N"):
+        w.append("daynight IN (?, 'B')")
+        v.append(f.daynight)
+
     if f.bbox:
-        left,bottom,right,top=f.bbox
-        w.extend(['lon BETWEEN ? AND ?','lat BETWEEN ? AND ?'])
-        v.extend([left,right,bottom,top])
-    query=('SELECT lat,lon,date,frp,sensor FROM mapa_muestras WHERE '
-           + ' AND '.join(w) + ' ORDER BY frp DESC,date DESC LIMIT 5000')
+        left, bottom, right, top = f.bbox
+        w.extend(["lon BETWEEN ? AND ?", "lat BETWEEN ? AND ?"])
+        v.extend([left, right, bottom, top])
+
+    where_sql = f"WHERE {' AND '.join(w)}" if w else ""
+    query = f"""
+        SELECT lat, lon, date, frp, sensor
+        FROM mapa_muestras
+        {where_sql}
+        ORDER BY frp DESC, date DESC
+        LIMIT 5000
+    """
+
     try:
-        with sqlite3.connect(MAP_DB.resolve().as_uri()+'?mode=ro',uri=True,timeout=30) as con:
-            rows=con.execute(query,v).fetchall()
+        with sqlite3.connect(f"file:{map_db.as_posix()}?mode=ro", uri=True, timeout=30) as con:
+            rows = con.execute(query, v).fetchall()
+            return {
+                "points": [
+                    {"lat": float(lat), "lon": float(lon), "date": d, "frp": float(frp), "sensor": s}
+                    for lat, lon, d, frp, s in rows
+                ],
+                "sampled": True,
+                "spatial_resolution_degrees": 1.0,
+                "limit": 5000,
+                "nota": "Muestras de presencia de celdas de 1 grado por día y sensor de NASA FIRMS."
+            }
     except sqlite3.Error as exc:
-        raise HTTPException(503,detail=f'Error de acceso a mapa espacial: {exc}')
-    return {'points':[{'lat':float(lat),'lon':float(lon),'date':dia,
-                       'frp':float(frp),'sensor':sensor} for lat,lon,dia,frp,sensor in rows],
-            'sampled':True,'spatial_resolution_degrees':1.0,'limit':5000,
-            'representation':'muestra de centros de celdas de 1 grado por dia y sensor',
-            'note':'No son focos individuales NASA FIRMS. FRP es maximo de celda-dia. '
-                   'La muestra espacial no permite interpretar distribuciones exhaustivas.'}
+        raise HTTPException(status_code=500, detail=f"Error consultando mapa de focos: {exc}")

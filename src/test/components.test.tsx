@@ -1,8 +1,17 @@
 import React from 'react'
 import '@testing-library/jest-dom/vitest'
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, vi } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
+
+vi.mock('../api/client', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../api/client')>()
+  return {
+    ...actual,
+    IS_MOCK_MODE: true,
+  }
+})
+
 import { MockBanner } from '../components/MockBanner'
 import { Navbar } from '../components/Navbar'
 import { Sidebar } from '../components/Sidebar'
@@ -104,6 +113,6 @@ describe('Componentes UI de BRASA', () => {
     expect(screen.getByText(/Mes más activo/i)).toBeInTheDocument()
     expect(screen.getByText(/Periodos inusuales 2024/i)).toBeInTheDocument()
     expect(screen.getByText(/Estado de esta semana/i)).toBeInTheDocument()
-    expect(screen.getByText(/inusual/i)).toBeInTheDocument()
+    expect(screen.getByText(/^Inusual$/i)).toBeInTheDocument()
   })
 })

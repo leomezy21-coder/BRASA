@@ -8,6 +8,7 @@ import { formatWeekFriendly } from '../utils/dateUtils'
 import { KpiCardSkeleton, ChartSkeleton } from '../components/SkeletonLoader'
 import { ClimatologyChart } from '../components/ClimatologyChart'
 import { AnomalyList } from '../components/AnomalyList'
+import { getProvincesForCountry } from '../utils/territoryData'
 
 /* Paleta del semáforo BRASA */
 const LEVELS: Record<StatusLevel, { label: string; color: string; soft: string; criterion: string }> = {
@@ -56,7 +57,11 @@ export const Alertas: React.FC = () => {
     navigate('/explorar')
   }
 
-  const selectedRegion = regions?.find((r) => r.id === filters.provinceId) || regions?.[0]
+  const availableProvinces = getProvincesForCountry(filters.country)
+  const selectedRegion =
+    availableProvinces.find((r) => r.id === filters.provinceId) ||
+    regions?.find((r) => r.id === filters.provinceId) ||
+    availableProvinces[0]
   const selectedCanton = selectedRegion?.cantons?.find((c) => c.id === filters.cantonId)
 
   if (isLoading || !currentStatus) {
@@ -129,7 +134,6 @@ export const Alertas: React.FC = () => {
           className="inline-flex w-fit items-center gap-2.5 px-6 py-3 bg-gradient-to-r from-[#FF7900] to-[#FF5500] hover:from-[#E66D00] hover:to-[#E04800] text-white text-sm font-bold rounded-full shadow-lg shadow-[#FF7900]/25 transition-[translate,box-shadow] duration-250 hover:-translate-y-[3px] group"
         >
           <span>Ver en el mapa</span>
-          <span className="text-base leading-none transition-transform group-hover:translate-x-1">→</span>
         </Link>
       </header>
 

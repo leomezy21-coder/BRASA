@@ -20,6 +20,8 @@ import type {
   SourceType,
   StatusLevel,
 } from '../types'
+import PAISES_177 from '../utils/paises177.json'
+import WORLD_CITIES from '../utils/worldCities.json'
 
 // Generador pseudoaleatorio determinista con semilla (Linear Congruential Generator)
 function pseudoRandom(seed: number): () => number {
@@ -475,10 +477,29 @@ export function mockGetHotspots(params: HotspotRequestParams): HotspotsResponse 
   const provFactor = getProvinceFactor(params.province_id)
   const baseValue = calculateBaseFireValue(year, week, provFactor)
 
-  // Determinar centro de la región o custom geometry
-  const region = MOCK_REGIONS.find((r) => r.id === params.province_id) || MOCK_REGIONS[0]
-  const centerLat = region.center[0]
-  const centerLon = region.center[1]
+  // Determinar centro del país o ciudad
+  let centerLat = -1.8312
+  let centerLon = -78.1834
+
+  if (params.canton_id) {
+    const code = (params.country_code || 'ECU').toUpperCase()
+    const cities = (WORLD_CITIES as Record<string, any[]>)[code] || []
+    const city = cities.find((c) => c.id === params.canton_id)
+    if (city) {
+      centerLat = city.lat
+      centerLon = city.lon
+    }
+  } else if (params.country_code) {
+    const country = (PAISES_177 as any[]).find((c) => c.code === params.country_code?.toUpperCase())
+    if (country) {
+      centerLat = country.lat
+      centerLon = country.lon
+    }
+  } else if (params.province_id) {
+    const region = MOCK_REGIONS.find((r) => r.id === params.province_id) || MOCK_REGIONS[0]
+    centerLat = region.center[0]
+    centerLon = region.center[1]
+  }
 
   // Cantidad de puntos proporcionales al valor de fire_cell_days
   const count = Math.min(180, Math.max(4, Math.floor(baseValue * 0.7)))

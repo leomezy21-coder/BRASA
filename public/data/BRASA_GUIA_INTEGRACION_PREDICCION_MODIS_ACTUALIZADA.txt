@@ -1,0 +1,363 @@
+BRASA - GUIA DE INTEGRACION DEL MODELO PREDICTIVO MODIS + ERA5
+Documento tecnico y de interfaz | 15 de noviembre de 2026
+Base documental: archivos inspeccionados del paquete Modelos.zip
+
+======================================================================
+1. DECISION PRINCIPAL: ¿HAY PROBLEMA SI POSTGRESQL TAMBIEN TIENE VIIRS?
+======================================================================
+
+NO. MODIS y VIIRS pueden coexistir en la misma base de datos PostgreSQL/PostGIS.
+No se debe borrar VIIRS ni volver a importar datos por este motivo.
+
+Condicion obligatoria: la funcionalidad de prediccion propuesta trabaja SOLO
+con MODIS. Las consultas de sus variables historicas deben filtrar el sensor
+MODIS antes de contar o agregar detecciones, usando el campo real del esquema
+(por ejemplo sensor o source_sensor; Antigravity debe verificar cual existe).
+
+Ejemplo conceptual, NO ejecutar sin comprobar nombres reales de tabla/columna:
+    SELECT ... FROM fire_detections WHERE source_sensor = 'MODIS' ...;
+
+Las pantallas generales de BRASA pueden conservar la informacion de VIIRS
+cuando el equipo la necesite; la pagina de prediccion tendra fuente fija MODIS.
+No sumar MODIS y VIIRS como si fueran observaciones equivalentes: tienen
+resoluciones y sensibilidades distintas (MODIS ~1 km; VIIRS ~375 m).
+No cambiar la estructura ni los registros VIIRS durante esta integracion.
+
+======================================================================
+2. QUE CONTIENE EL PAQUETE DEL MODELO (VERIFICADO)
+======================================================================
+
+Archivos incluidos en Modelos.zip:
+
+1) modelo_xgboost_recall_modis_era5_2019_2025.joblib
+   Modelo XGBoost entrenado. Requiere Python y preparar exactamente las mismas
+   variables de entrada. No se ejecuta en React ni representa una base de datos.
+
+2) metadatos_xgboost_recall_modis_era5_2019_2025.json
+   Configuracion, variables, periodos, umbral y metricas.
+
+3) metricas_xgboost_recall_modis_era5_2019_2025.csv
+   Resultados medidos en la evaluacion retrospectiva de 2025.
+
+4) prediccion_xgboost_recall_modis_era5_2019_2025.geojson
+   36 poligonos (cuadriculas aproximadas de 0,2 grados) con probabilidades.
+   Todos corresponden a la semana objetivo que inicia el 29-12-2025.
+
+Campos comprobados de cada cuadricula del GeoJSON:
+- sensor: "MODIS"
+- fuente_clima: "Open-Meteo ERA5"
+- semana_objetivo: "2025-12-29"
+- probabilidad_xgboost: valor de 0 a 1
+- probabilidad_historica: valor de 0 a 1
+- clasificacion_xgboost: 0 o 1
+- umbral: 0.19
+- modelo: "peso_12"
+- uso: advertencia de caracter experimental
+- cuadricula_i, cuadricula_j: identificadores internos
+
+IMPORTANTE: MODIS FIRMS NO contiene precipitacion, temperatura del aire,
+humedad relativa ni viento. En este modelo dichas variables provienen de
+Open-Meteo ERA5, una fuente meteorologica EXTERNA de reanalisis historico.
+
+======================================================================
+3. QUE PUEDE PREDECIR REALMENTE EL MODELO
+======================================================================
+
+OBJETIVO ESPECIFICO:
+Estimar la probabilidad de que MODIS registre AL MENOS UNA deteccion termica
+en una cuadricula del sector de Chimborazo durante la semana siguiente,
+a partir del historial de detecciones y condiciones meteorologicas previas.
+
+SI PUEDE MOSTRAR:
+- Probabilidad experimental por cuadricula para la semana objetivo disponible.
+- Identificacion de cuadriculas que superan el umbral 0.19 del modelo.
+- Comparacion de probabilidad XGBoost frente a referencia historica por zona.
+- Evaluacion retrospectiva de 2025: rendimiento, aciertos y errores.
+
+NO PUEDE AFIRMAR:
+- Que habra un incendio forestal confirmado.
+- La ubicacion exacta de ignicion, propagacion o severidad de un incendio.
+- Pronosticos fiables para todo Ecuador o el mundo (se entreno en 36 cuadriculas
+  de un recuadro aproximado de Chimborazo).
+- Pronostico actual de noviembre de 2026 usando el GeoJSON de 2025.
+- Temperatura, lluvia, viento o humedad futuros como salida de este modelo.
+
+Para pronosticar una nueva semana se necesitan las observaciones MODIS
+recientes y las cuatro variables meteorologicas disponibles ANTES de la fecha
+objetivo. ERA5 historico no debe confundirse con un pronostico meteorologico
+futuro. Se requiere generar las 14 variables en el orden del modelo y ejecutar
+nueva inferencia en FastAPI. No basta con volver a mostrar el GeoJSON antiguo.
+
+======================================================================
+4. RESULTADOS REALES Y LIMITACIONES (METADATOS DEL ZIP)
+======================================================================
+
+Modelo seleccionado: XGBoost con peso positivo 12; umbral 0.19.
+Entrenamiento: 2019-2023.
+Calibracion: primer semestre de 2024.
+Seleccion de umbral: segundo semestre de 2024.
+Evaluacion retrospectiva: 2025 (1.836 ejemplos, 86 casos positivos).
+
+RESULTADO XGBOOST AJUSTADO, 2025:
+- Accuracy:             96,13 %
+- Recall:               55,81 %
+- Precision:            59,26 %
+- F1-score:             57,49 %
+- ROC-AUC:              0,8685
+- Brier:                0,02877
+- Positivos correctos:  48
+- Casos no detectados:  38
+- Falsas alarmas:       33
+- Negativos correctos:  1.717
+
+COMPARACION OBLIGATORIA:
+- Brier de referencia historica: 0,02800 (MENOR, por tanto mejor).
+- Accuracy de clasificar siempre "sin actividad": 95,32 %.
+
+Interpretacion: el modelo es valido como experimento academico para
+exploracion y comparacion, NO esta validado como servicio operativo de alerta.
+El Accuracy 96,13 % NO significa que detecta el 96 % de los incendios.
+Los resultados de 2025 se consultaron en experimentos anteriores; no deben
+presentarse como validacion totalmente independiente nueva.
+
+======================================================================
+5. COMO INTEGRARLO A LA APLICACION BRASA: DOS ETAPAS
+======================================================================
+
+ETAPA A - INTEGRACION INMEDIATA, SIN NUEVO ENTRENAMIENTO NI BD
+
+Objetivo: mostrar la salida real ya exportada de manera fiel y rapida.
+
+A1. Descomprimir Modelos.zip en una carpeta local del proyecto, por ejemplo:
+    BRASA-main/modelos/
+    No modificar el contenido de los cuatro archivos.
+
+A2. Para visualizar en React + Leaflet, copiar SOLO el GeoJSON a:
+    BRASA-main/public/data/prediccion_xgboost_recall_modis_era5_2019_2025.geojson
+    o servirlo mediante un endpoint de lectura del backend.
+    No cargar el .joblib en el navegador.
+
+A3. Crear una pagina /prediccion (o integrar una vista del mapa existente)
+    con un componente React Leaflet que lea los 36 poligonos y coloree cada
+    cuadricula por probabilidad_xgboost. El mapa debe mostrar leyenda 0-100%.
+    Al seleccionar un poligono, desplegar la probabilidad XGBoost,
+    la probabilidad historica, la clasificacion con umbral 0.19 y la fecha.
+
+A4. Leer el JSON de metadatos y el CSV de metricas (o exponer sus campos)
+    para alimentar el panel de calidad y trazabilidad. No escribir valores
+    inventados ni reemplazar las metricas por porcentajes decorativos.
+
+A5. Mostrar SIEMPRE la leyenda visible:
+    "Estimacion experimental de actividad termica MODIS.
+     Semana del 29-12-2025. No es pronostico actual ni alerta de incendio."
+
+A6. Probar solamente que el GeoJSON se abra, los poligonos se visualicen,
+    sus porcentajes coincidan con los archivos y no haya error en consola.
+
+ETAPA B - PREDICCIONES NUEVAS CON FASTAPI + POSTGRESQL + ERA5
+
+B1. Conservar el modelo .joblib y metadatos en el BACKEND, en un directorio
+    controlado. Cargar el .joblib solamente si proviene del entrenamiento
+    propio y es de confianza (joblib puede ejecutar codigo al deserializar).
+    Verificar versiones compatibles de Python, XGBoost y scikit-learn.
+
+B2. Consultar PostgreSQL/PostGIS para obtener actividad MODIS por semana y
+    cuadricula, filtrando siempre MODIS. Las detecciones VIIRS permanecen en
+    su base, pero NO intervienen en los atributos de este modelo.
+
+B3. Enlazar meteorologia externa con cada cuadricula y semana. Guardar cache
+    historica y actualizar solo periodos nuevos. No traer las 30,5 millones
+    de filas a Python para cada prediccion.
+
+B4. Generar exactamente estas 14 variables, en este orden documentado:
+    count, count_lag1, count_lag2, sum_last4, sum_last12, active_last4,
+    latitude, longitude, sin_week, cos_week,
+    temperatura_media_7d_c, precipitacion_7d_mm,
+    humedad_media_7d_pct, viento_medio_7d_kmh.
+    El calculo debe seguir la misma logica usada en el notebook y utilizar
+    solo valores disponibles hasta el cierre de la semana de entrada.
+
+B5. Crear endpoints de lectura/inferencia separados, por ejemplo:
+    GET  /api/prediccion/modis/metadata
+    GET  /api/prediccion/modis/geojson?semana=AAAA-MM-DD
+    POST /api/prediccion/modis/generar
+    Estos nombres son PROPUESTAS, no rutas verificadas en la app.
+    No modifican los endpoints existentes de exploracion o VIIRS.
+
+B6. Generar GeoJSON NUEVO con fecha objetivo, nombre del modelo y fuente
+    meteorologica; guardar resultados para no recalcular en cada visita.
+    Si faltan datos recientes o meteorologia, mostrar "Sin prediccion
+    disponible" y la causa. NUNCA reutilizar el GeoJSON de 2025 como si
+    fuera un resultado actual.
+
+B7. No pasar automaticamente a modo real de toda la app hasta confirmar
+    que los endpoints existentes funcionan. La nueva pagina puede operar
+    inicialmente con el GeoJSON estatico mientras terminan la BD.
+
+======================================================================
+6. PAGINA "PREDICCION": SOLO PANELES QUE APORTAN
+======================================================================
+
+PROPUESTA DE UNA PAGINA (ESCRITORIO):
+
++------------------------------------------------------------------+
+| BRASA > Prediccion de actividad termica                           |
+| MODIS + ERA5  |  Chimborazo (zona de estudio)                      |
+| Semana objetivo: 29-12-2025  |  EXPERIMENTAL / HISTORICA           |
++--------------------------------------------+---------------------+
+|                                            | ZONA SELECCIONADA   |
+|           MAPA DE PROBABILIDADES           |                     |
+|          36 cuadriculas coloreadas         | XGBoost:  XX,X %    |
+|                                            | Historica: YY,Y %  |
+|   Leyenda continua: menor ----> mayor      | Umbral: 19 %       |
+|                                            | Supera umbral: S/N |
++--------------------------------------------+---------------------+
+| DESEMPENO DEL MODELO (EVALUACION 2025)                           |
+| Recall 55,81 % | Precision 59,26 % | ROC-AUC 0,8685            |
+| Accuracy 96,13 % (contextualizar con base 95,32 %)               |
+| Brier modelo 0,02877 | Referencia 0,02800 (mejor)                |
++------------------------------------------------------------------+
+| Fuente: NASA FIRMS MODIS + Open-Meteo ERA5. No es alerta real.   |
++------------------------------------------------------------------+
+
+PANEL 1 - MAPA INTERACTIVO (PRINCIPAL)
+- Mostrar los 36 poligonos exactos del GeoJSON; NO dibujar puntos ficticios.
+- Gradiente visual claro/oscuro proporcional a probabilidad_xgboost.
+- Leyenda numerica porcentual y contorno visible de cada cuadricula.
+- Tooltip al pasar; detalle completo al hacer clic.
+- El mapa se limita al recuadro realmente cubierto; no simular resultados
+  para otras provincias, cantones ni el mundo.
+
+PANEL 2 - DETALLE DE ZONA (LATERAL)
+- Probabilidad XGBoost en porcentaje, no unicamente "alto/medio/bajo".
+- Probabilidad historica como comparacion.
+- Clasificacion con umbral 0.19: "Supera umbral" / "No supera umbral".
+- Fecha de semana objetivo y aclaracion "estimacion experimental".
+- Sin advertencias rojas tipo emergencias, ni notificaciones de incendio.
+
+PANEL 3 - RENDIMIENTO DEL MODELO (COMPACTO)
+- Recall, precision, ROC-AUC y Accuracy, con explicacion corta.
+- Brier frente a referencia historica, para evitar conclusiones engañosas.
+- Nota esencial: 48 verdaderos positivos, 38 falsos negativos y 33 falsas
+  alarmas en la evaluacion de 2025.
+- Puede presentarse como tabla plegable en pantalla movil.
+
+ENCABEZADO Y CONTEXTO
+- Nombre de pagina, region, sensor MODIS y semana especifica.
+- Si es visualizacion historica, no mostrar selector de fechas no soportadas.
+- Cuando la inferencia dinamica exista, habilitar selector de zona/semana
+  SOLO para periodos efectivamente disponibles.
+
+DISENO VISUAL
+- Conservar menu, tipografia, colores y estilo actual de BRASA.
+- Mapa aproximadamente 70 % del ancho y detalle 30 % en escritorio.
+- En movil, mapa primero y detalle debajo; panel de metricas plegable.
+- Fondo neutro, tarjetas discretas, controles claros y textos breves.
+- Sin carruseles, rankings arbitrarios, graficos duplicados, estadisticas
+  mundiales inventadas, medidores decorativos ni secciones vacias.
+- Una sola leyenda para el mapa y una sola nota cientifica visible.
+
+======================================================================
+7. CARGAR UN ZIP/CSV MODIS EN BRUTO Y GENERAR UNA NUEVA PREDICCION
+======================================================================
+
+ESTADO ACTUAL: NO IMPLEMENTADO EN LA APP. El archivo .joblib NO admite un ZIP
+NASA FIRMS como entrada directa. El GeoJSON incluido es una salida fija de
+2025. Esta seccion es una especificacion de lo que se debe desarrollar.
+
+FLUJO MINIMO PARA BRASA:
+1) CARGA: permitir seleccionar un archivo ZIP o CSV MODIS original en una
+   pantalla de importacion, o utilizar los registros MODIS ya presentes en
+   PostgreSQL. No exigir subir un archivo cada vez que se desee predecir.
+2) VALIDACION: comprobar formato, columnas de coordenadas/fecha, valores,
+   pertenencia al sensor MODIS y rango temporal. Rechazar VIIRS en este flujo
+   predictivo; NO eliminar datos VIIRS almacenados en la base.
+3) IMPORTACION: leer por streaming y cargar a PostgreSQL con lotes; evitar
+   duplicados mediante claves/identificadores consistentes. No pasar todo el
+   ZIP al modelo, no leer millones de filas en RAM y no bloquear la pagina.
+   Registrar el avance, errores, archivo importado y posibilidad de reanudar.
+4) AGREGACION: asignar detecciones a las mismas cuadriculas de 0,2 grados
+   empleadas en entrenamiento. Recalcular solo las semanas afectadas y las
+   ventanas historicas que dependen de ellas; considerar semanas sin
+   detecciones (cero observaciones), evitando crear falsos positivos.
+5) VARIABLES: reconstruir las 14 caracteristicas EN EL MISMO ORDEN Y CON
+   LA MISMA LOGICA que en el notebook. Obtener de la cache/servicio ERA5
+   temperatura, lluvia, humedad y viento correspondientes exclusivamente
+   al periodo conocido ANTES de la semana a predecir. MODIS NO contiene
+   estas variables ambientales. Si faltan, mostrar causa y no inventarlas.
+6) INFERENCIA: cargar el .joblib de confianza en FastAPI y predecir la
+   probabilidad de al menos una deteccion MODIS en la SEMANA SIGUIENTE a
+   la ultima semana completa de entrada. Aplicar umbral 0,19 por separado:
+   una probabilidad no es una alerta confirmada de incendio.
+7) PUBLICACION: devolver GeoJSON nuevo con cuadricula, probabilidad,
+   etiqueta de clasificacion, fechas, modelo y fuentes. Guardar los
+   resultados para que consultar el mapa no repita procesamiento masivo.
+
+LIMITACIONES QUE LA INTERFAZ DEBE EXPLICAR:
+- Un ZIP nuevo NO genera prediccion automaticamente hoy; faltan importar,
+  agregar, obtener meteorologia y conectar inferencia en FastAPI.
+- Una sola deteccion no basta: el modelo requiere historial semanal previo.
+- El modelo fue entrenado en 36 cuadriculas de un recuadro aproximado de
+  Chimborazo: fuera de ese territorio NO hay validacion de desempeno.
+- El modelo solo predice presencia de anomalías termicas detectables por
+  MODIS; NO predice ignicion exacta, severidad, propagacion ni meteorologia.
+- Las nuevas predicciones requieren datos MODIS recientes y clima conocido
+  antes de la fecha objetivo. ERA5 historico no es pronostico futuro.
+- Agregar archivos NO obliga a reentrenar en cada carga; se actualizan las
+  caracteristicas. El modelo puede requerir reentrenamiento/reevaluacion
+  posterior ante cambios en los datos o nuevas regiones.
+- Una carga de millones de filas puede tardar muchos minutos: no prometer
+  1-2 minutos. Ejecutar en proceso separado y presentar progreso real.
+- No afirmar que una prediccion de 2025 es actual en noviembre de 2026.
+- Si no hay historial suficiente o faltan datos ambientales, indicar
+  "Prediccion no disponible" sin rellenar datos ficticios.
+
+ELEMENTOS MINIMOS DE LA INTERFAZ PARA ESTE FLUJO:
+- En la pagina de importacion existente: selector ZIP/CSV MODIS, estado,
+  registros aceptados/duplicados y progreso. Evitar un segundo importador
+  visual si ya existe uno en BRASA.
+- En la pagina de prediccion: zona dentro del territorio validado, semana
+  objetivo, boton "Generar prediccion" y mapa; habilitar el boton solo
+  cuando el historial y la meteorologia requerida esten disponibles.
+- Al actualizar datos, mantener los resultados anteriores visibles con su
+  fecha correcta. No presentar archivos subidos como datos ya validados.
+
+======================================================================
+8. CRITERIOS DE ACEPTACION Y ORDEN DE TRABAJO
+======================================================================
+
+PRIORIDAD 1 (PARA DEMOSTRACION RAPIDA)
+[ ] Conservar MODIS y VIIRS en PostgreSQL sin borrar nada.
+[ ] Copiar GeoJSON, JSON y CSV y montar la pagina de prediccion.
+[ ] Mostrar exactamente las 36 cuadriculas y semana 29-12-2025.
+[ ] Mostrar probabilidades reales del GeoJSON y estadisticas verificadas.
+[ ] Etiquetar claramente el caracter experimental e historico.
+
+PRIORIDAD 2 (CUANDO SE REQUIERA PREDICCION NUEVA)
+[ ] Revisar SQL del backend y filtro estricto MODIS.
+[ ] Reproducir las 14 variables semanales usadas en entrenamiento.
+[ ] Obtener meteorologia necesaria para nueva fecha, sin fuga temporal.
+[ ] Servir resultados nuevos desde FastAPI, guardando cache por semana.
+[ ] Verificar resultado con un caso real y fecha correctamente declarada.
+
+NO HACER
+- Reentrenar por cada visita al mapa.
+- Importar millones de filas desde el navegador.
+- Mezclar VIIRS dentro de las variables del modelo MODIS.
+- Presentar 96,13 % de Accuracy como 96,13 % de incendios previstos.
+- Publicar una estimacion de 2025 como pronostico en 2026.
+- Convertir el experimento en alertas operativas sin validacion adicional.
+
+======================================================================
+9. REFERENCIAS TECNICAS
+======================================================================
+
+NASA FIRMS: https://firms.modaps.eosdis.nasa.gov/
+NASA - VIIRS y MODIS, resolucion y productos:
+https://www.earthdata.nasa.gov/data/instruments/viirs/viirs-i-band-375-m-active-fire-data
+Open-Meteo Historical Weather API:
+https://open-meteo.com/en/docs/historical-weather-api
+
+Nota: esta guia se fundamento en el contenido real de Modelos.zip y en la
+arquitectura de BRASA descrita en el proyecto. Los nombres precisos de tablas,
+columnas y endpoints deben contrastarse con el codigo local vigente.

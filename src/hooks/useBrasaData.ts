@@ -81,10 +81,14 @@ export function useBrasaData(): BrasaDataState {
     const ac = new AbortController()
     abortControllerRef.current = ac
 
-    setIsLoading(true)
+    // Solo poner isLoading (esqueleto) si no hay datos en memoria (carga inicial)
+    if (!calendar) {
+      setIsLoading(true)
+    }
     setError(null)
 
     const baseParams = {
+      country_code: filters.country || 'ECU',
       year_from: filters.yearRange[0],
       year_to: filters.yearRange[1],
       sensor: filters.sensor,
@@ -117,6 +121,7 @@ export function useBrasaData(): BrasaDataState {
         setIsLoading(false)
       })
   }, [
+    filters.country,
     filters.provinceId,
     filters.cantonId,
     filters.yearRange,
@@ -128,8 +133,11 @@ export function useBrasaData(): BrasaDataState {
   ])
 
   useEffect(() => {
-    loadData()
+    const timer = setTimeout(() => {
+      loadData()
+    }, 250)
     return () => {
+      clearTimeout(timer)
       if (abortControllerRef.current) {
         abortControllerRef.current.abort()
       }
@@ -141,40 +149,42 @@ export function useBrasaData(): BrasaDataState {
     if (IS_MOCK_MODE) {
       const radius = filters.customGeometry?.radiusMeters || filters.coverageRadiusMeters || 18500
       for (let w = 1; w <= 52; w++) {
-        const cacheKey = `${filters.selectedYear}-${w}-${filters.provinceId}-${filters.cantonId}-${filters.sensor}-${filters.confidence}-${filters.daynight}-${radius}`
+        const cacheKey = `${filters.country}-${filters.selectedYear}-${w}-${filters.cantonId}-${filters.sensor}-${filters.confidence}-${filters.daynight}`
         if (!hotspotsCacheRef.current.has(cacheKey)) {
           const res = mockGetHotspots({
+            country_code: filters.country || 'ECU',
             year_from: filters.yearRange[0],
             year_to: filters.yearRange[1],
             sensor: filters.sensor,
             confidence: filters.confidence,
             daynight: filters.daynight,
-            province_id: filters.provinceId,
             canton_id: filters.cantonId,
             year: filters.selectedYear,
             week: w,
-            geojson: filters.customGeometry?.geojson,
           })
           hotspotsCacheRef.current.set(cacheKey, res)
         }
       }
     }
   }, [
+    filters.country,
     filters.selectedYear,
-    filters.provinceId,
     filters.cantonId,
     filters.sensor,
     filters.confidence,
     filters.daynight,
-    filters.coverageRadiusMeters,
-    filters.customGeometry?.radiusMeters,
+    filters.yearRange,
   ])
+
+  // Limpiar caché de focos cuando el usuario pulsa ANALIZAR ÁREA o cambia país
+  useEffect(() => {
+    hotspotsCacheRef.current.clear()
+  }, [analyzeTrigger, filters.country])
 
   // Cargar focos de calor específicos para la semana y año seleccionados de forma instantánea
   useEffect(() => {
-    const radius = filters.customGeometry?.radiusMeters || filters.coverageRadiusMeters || 18500
-    const cacheKey = `${filters.selectedYear}-${selectedWeek}-${filters.provinceId}-${filters.cantonId}-${filters.sensor}-${filters.confidence}-${filters.daynight}-${radius}`
-    
+    const cacheKey = `${filters.country}-${filters.selectedYear}-${selectedWeek}-${filters.sensor}-${filters.confidence}-${filters.daynight}`
+
     // Si ya está en caché, actualizar de inmediato sin parpadeos
     if (hotspotsCacheRef.current.has(cacheKey)) {
       setHotspots(hotspotsCacheRef.current.get(cacheKey)!)
@@ -188,47 +198,46 @@ export function useBrasaData(): BrasaDataState {
     const ac = new AbortController()
     hotspotsAbortRef.current = ac
 
-    fetchHotspots(
-      {
-        year_from: filters.yearRange[0],
-        year_to: filters.yearRange[1],
-        sensor: filters.sensor,
-        confidence: filters.confidence,
-        daynight: filters.daynight,
-        province_id: filters.provinceId,
-        canton_id: filters.cantonId,
-        year: filters.selectedYear,
-        week: selectedWeek,
-        geojson: filters.customGeometry?.geojson,
-      },
-      ac.signal
-    )
-      .then((res) => {
-        hotspotsCacheRef.current.set(cacheKey, res)
-        setHotspots(res)
-        setIsHotspotsLoading(false)
-      })
-      .catch((err) => {
-        if (err.name === 'AbortError') return
-        console.error('Error al cargar focos:', err)
-        setIsHotspotsLoading(false)
-      })
+    setIsHotspotsLoading(true)
+
+    const timer = setTimeout(() => {
+      fetchHotspots(
+        {
+          country_code: filters.country || 'ECU',
+          sensor: filters.sensor,
+          confidence: filters.confidence,
+          daynight: filters.daynight,
+          year: filters.selectedYear,
+          week: selectedWeek,
+        },
+        ac.signal
+      )
+        .then((res) => {
+          hotspotsCacheRef.current.set(cacheKey, res)
+          setHotspots(res)
+          setIsHotspotsLoading(false)
+        })
+        .catch((err) => {
+          if (err.name === 'AbortError') return
+          console.error('Error al cargar focos:', err)
+          setIsHotspotsLoading(false)
+        })
+    }, 60)
 
     return () => {
+      clearTimeout(timer)
       if (hotspotsAbortRef.current) {
         hotspotsAbortRef.current.abort()
       }
     }
   }, [
+    filters.country,
     filters.selectedYear,
     selectedWeek,
-    filters.provinceId,
-    filters.cantonId,
     filters.sensor,
     filters.confidence,
     filters.daynight,
-    filters.coverageRadiusMeters,
-    filters.customGeometry?.radiusMeters,
+    analyzeTrigger,
   ])
 
   return {

@@ -438,3 +438,39 @@ def get_current_status(params: BaseFilter):
 @app.get("/health")
 def health():
     return {"status": "ok", "db": DB_PATH.exists()}
+
+
+# ─────────────────────────────────────────────
+# Endpoints de Predicción ML (XGBoost + MODIS + ERA5)
+# ─────────────────────────────────────────────
+
+MODELS_DIR = Path(__file__).parent / "models"
+
+@app.get("/api/prediction/geojson")
+def get_prediction_geojson():
+    """Retorna las 36 cuadrículas con probabilidades estimadas por XGBoost (MODIS + ERA5)."""
+    geojson_path = MODELS_DIR / "prediccion_xgboost_recall_modis_era5_2019_2025.geojson"
+    if not geojson_path.exists():
+        # Fallback a public/data
+        geojson_path = Path(__file__).parent.parent / "public" / "data" / "prediccion_xgboost_recall_modis_era5_2019_2025.geojson"
+    if not geojson_path.exists():
+        raise HTTPException(status_code=404, detail="Archivo GeoJSON de predicción no encontrado")
+    
+    import json
+    with open(geojson_path, "r", encoding="utf-8") as f:
+        return json.load(f)
+
+
+@app.get("/api/prediction/metadata")
+def get_prediction_metadata():
+    """Retorna metadatos del modelo supervisado XGBoost y sus 14 variables."""
+    meta_path = MODELS_DIR / "metadatos_xgboost_recall_modis_era5_2019_2025.json"
+    if not meta_path.exists():
+        meta_path = Path(__file__).parent.parent / "public" / "data" / "metadatos_xgboost_recall_modis_era5_2019_2025.json"
+    if not meta_path.exists():
+        raise HTTPException(status_code=404, detail="Metadatos no encontrados")
+    
+    import json
+    with open(meta_path, "r", encoding="utf-8") as f:
+        return json.load(f)
+

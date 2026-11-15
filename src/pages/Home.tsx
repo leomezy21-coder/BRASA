@@ -1,6 +1,6 @@
 import React, { useRef } from 'react'
 import { Link } from 'react-router-dom'
-import { Users } from 'lucide-react'
+import { Users, Wind } from 'lucide-react'
 import { CursorGlow } from '../components/CursorGlow'
 import { usePointerEffects } from '../hooks/usePointerEffects'
 import { PRIMARY_BUTTON_FX, SECONDARY_BUTTON_FX } from '../utils/buttonFx'
@@ -71,21 +71,26 @@ export const Home: React.FC = () => {
 
         {/* Descripción de alcance y satélites */}
         <div className="text-slate-600 text-sm sm:text-base md:text-lg leading-relaxed space-y-0.5 max-w-xl mx-auto font-normal px-4">
-          <p>Análisis de la actividad de quema en Ecuador (2001 – 2025)</p>
+          <p>Análisis de la actividad de quema a escala mundial (2005–2025)</p>
           <p>con datos satelitales MODIS y VIIRS.</p>
         </div>
 
         {/* Botones de Acción Principales */}
         <div className="flex flex-wrap items-center justify-center gap-3.5 sm:gap-4 pt-6 sm:pt-7">
           <Link
-            to="/explorar"
+            to="/simulador"
             className={`inline-flex items-center gap-2.5 px-6 sm:px-8 py-3 sm:py-3.5 bg-gradient-to-r from-[#FF7900] to-[#FF5500] hover:from-[#E66D00] hover:to-[#E04800] text-white font-bold rounded-full shadow-lg shadow-[#FF7900]/25 ${PRIMARY_BUTTON_FX} text-sm sm:text-base group`}
+          >
+            <Wind className="w-4 h-4 sm:w-4.5 sm:h-4.5 transition-transform group-hover:rotate-45" />
+            <span>Simulador Táctico FireCast</span>
+          </Link>
+
+          <Link
+            to="/explorar"
+            className={`inline-flex items-center gap-2.5 px-6 sm:px-8 py-3 sm:py-3.5 bg-[#0B1B3D] hover:bg-[#132A5C] text-white font-bold rounded-full shadow-lg ${PRIMARY_BUTTON_FX} text-sm sm:text-base group`}
           >
             <BarChartFilled className="w-4 h-4 sm:w-4.5 sm:h-4.5 transition-transform group-hover:scale-110" />
             <span>Explorar Dashboard</span>
-            <span className="text-base sm:text-lg leading-none font-normal transition-transform group-hover:translate-x-1">
-              →
-            </span>
           </Link>
 
           <Link

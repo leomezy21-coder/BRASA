@@ -9,6 +9,8 @@ import { NAV_ITEMS } from '../utils/navItems'
 const TOP_LINKS = [
   { to: '/', label: 'Inicio', end: true },
   { to: '/explorar', label: 'Explorar' },
+  { to: '/prediccion', label: 'Predicción ML' },
+  { to: '/simulador', label: 'Simulador Táctico' },
   { to: '/metodologia', label: 'Metodología' },
   { to: '/equipo', label: 'Acerca de nosotros' },
 ]

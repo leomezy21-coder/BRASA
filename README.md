@@ -1,9 +1,9 @@
 # BRASA — Bitácora Regional de Actividad Satelital Armonizada
 ### NASA Space Apps Challenge 2026 • Desarrollado por el Equipo CODE RED
 
-BRASA es una aplicación web interactiva y científica diseñada para explorar, analizar y comparar la actividad histórica de incendios y anomalías térmicas en Ecuador (2001–2025) a partir de las observaciones satelitales de los sensores **MODIS** (satélites Terra y Aqua) y **VIIRS** (satélites Suomi-NPP y NOAA-20) de la NASA.
+BRASA es una plataforma web interactiva para explorar y comparar la actividad térmica histórica a escala mundial, con un período principal de referencia de 2005 a 2025. Utiliza observaciones de NASA FIRMS provenientes de MODIS y VIIRS. La cobertura temporal varía según el sensor, el territorio y los archivos disponibles.
 
-El frontend está completamente desacoplado del backend mediante una interfaz tipada estricta y opera inicialmente en **Modo Mock determinista**, permitiendo una experiencia de usuario completa y lista para producción.
+El frontend React consume la API REST de FastAPI. El modo de datos reales se activa con VITE_USE_MOCK=false; el modo Mock se conserva exclusivamente para demostraciones y pruebas identificadas como datos simulados.
 
 ---
 
@@ -30,7 +30,7 @@ El frontend está completamente desacoplado del backend mediante una interfaz ti
 ├── src/
 │   ├── api/
 │   │   ├── client.ts         # Cliente HTTP con soporte de AbortSignal y selector de modo Mock
-│   │   └── mock.ts           # Generador determinista de datos históricos de Ecuador (2001–2025)
+│   │   └── mock.ts           # Generador de datos simulados para demostración
 │   ├── components/
 │   │   ├── Navbar.tsx        # Navegación principal y badges de estado
 │   │   ├── MockBanner.tsx    # Banner informativo "Datos simulados de demostración"
@@ -115,15 +115,12 @@ El frontend se comunica exclusivamente mediante las funciones tipadas en `src/ap
 ### Parámetros Base de Filtrado (Peticiones POST)
 ```json
 {
-  "year_from": 2001,
+  "year_from": 2005,
   "year_to": 2025,
-  "sensor": "harmonized",    // "harmonized" | "modis" | "viirs"
-  "confidence": "nominal_high", // "nominal_high" | "all"
-  "daynight": "all",          // "all" | "D" | "N"
-  "province_id": "chimborazo",
-  "canton_id": "riobamba",
-  "geojson": { ... },         // Opcional: Geometría personalizada
-  "bbox": [-78.95, -2.40, -78.35, -1.35] // Opcional
+  "sensor": "harmonized",
+  "confidence": "all",
+  "daynight": "all",
+  "country_code": "BRA"
 }
 ```
 

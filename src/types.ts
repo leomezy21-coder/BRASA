@@ -24,6 +24,15 @@ export interface CustomGeometry {
   geojson?: GeoJSON.GeoJsonObject
 }
 
+export interface CountryItem {
+  code: string
+  name: string
+  lat: number
+  lon: number
+  zoom?: number
+  continent?: string
+}
+
 export interface BaseFilterParams {
   year_from: number
   year_to: number
@@ -32,6 +41,7 @@ export interface BaseFilterParams {
   daynight: DayNight
   geojson?: GeoJSON.GeoJsonObject
   bbox?: [number, number, number, number] // [minLon, minLat, maxLon, maxLat]
+  country_code?: string
   province_id?: string
   canton_id?: string
 }
@@ -96,7 +106,7 @@ export interface HotspotsResponse {
   points: HotspotPoint[]
 }
 
-export interface HotspotRequestParams extends BaseFilterParams {
+export interface HotspotRequestParams extends Partial<BaseFilterParams> {
   date_from?: string
   date_to?: string
   year?: number
@@ -124,7 +134,7 @@ export interface Canton {
 export interface Region {
   id: string
   name: string
-  geojson: GeoJSON.Polygon | GeoJSON.GeoJsonObject | any
+  geojson?: GeoJSON.Polygon | GeoJSON.GeoJsonObject | any
   center: [number, number] // [lat, lon]
   zoom: number
   cantons?: Canton[]
@@ -134,10 +144,12 @@ export type RegionsResponse = Region[]
 
 // Estado de filtros del cliente
 export interface FilterState {
-  country: string // 'Ecuador'
+  continent?: string
+  country: string // 'ECU'
+  countryName: string // 'Ecuador'
   provinceId: string
   cantonId: string
-  yearRange: [number, number] // [2001, 2025]
+  yearRange: [number, number] // [2005, 2025]
   selectedYear: number // p. ej. 2024
   sensor: SensorType
   confidence: ConfidenceLevel

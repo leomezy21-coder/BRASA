@@ -68,7 +68,7 @@ export const FireCalendar: React.FC<FireCalendarProps> = ({
   const handleWeekChange = useCallback((week: number) => onSelectWeek(selectedYear, week), [onSelectWeek, selectedYear])
   const { isPlaying, speed, togglePlay, setSpeed, setWeek } = useTimeline(selectedWeek, handleWeekChange, 52)
 
-  if (isLoading || !calendar) {
+  if (!calendar && isLoading) {
     return <ChartSkeleton height="h-96" />
   }
 
@@ -224,7 +224,7 @@ export const FireCalendar: React.FC<FireCalendarProps> = ({
         <div>
           <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-[#FF7900]">Calendario de quema</p>
           <h3 className="mt-2 text-xl sm:text-2xl font-black tracking-tight text-[#0B1B3D]">
-            Actividad semanal 2001–2025
+            Actividad semanal 2005–2025
           </h3>
           <p className="mt-1 text-sm text-slate-500">
             Cada celda es una semana en fire_cell_days. Haz clic para verla en el mapa.

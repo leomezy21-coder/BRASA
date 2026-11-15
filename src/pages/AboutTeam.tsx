@@ -51,9 +51,8 @@ const TeamAccordion: React.FC = () => {
               className="w-full flex items-center justify-between gap-4 py-4 text-left group"
             >
               <span
-                className={`text-base sm:text-lg font-extrabold transition-colors ${
-                  isOpen ? 'text-[#FF7900]' : 'text-[#0B1B3D] group-hover:text-[#FF7900]'
-                }`}
+                className={`text-base sm:text-lg font-extrabold transition-colors ${isOpen ? 'text-[#FF7900]' : 'text-[#0B1B3D] group-hover:text-[#FF7900]'
+                  }`}
               >
                 {tab.title}
               </span>
@@ -66,9 +65,8 @@ const TeamAccordion: React.FC = () => {
               </span>
             </button>
             <div
-              className={`grid transition-[grid-template-rows] duration-300 ease-out motion-reduce:transition-none ${
-                isOpen ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'
-              }`}
+              className={`grid transition-[grid-template-rows] duration-300 ease-out motion-reduce:transition-none ${isOpen ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'
+                }`}
             >
               <p className="overflow-hidden text-slate-600 leading-relaxed">
                 <span className="block pb-5 pr-8">{tab.body}</span>
@@ -148,7 +146,6 @@ export const AboutTeam: React.FC = () => {
               className={`inline-flex items-center gap-2.5 px-6 sm:px-8 py-3 sm:py-3.5 bg-gradient-to-r from-[#FF7900] to-[#FF5500] hover:from-[#E66D00] hover:to-[#E04800] text-white font-bold rounded-full shadow-lg shadow-[#FF7900]/25 ${PRIMARY_BUTTON_FX} text-sm sm:text-base group`}
             >
               <span>Ver nuestra solución</span>
-              <span className="text-lg leading-none transition-transform group-hover:translate-x-1">→</span>
             </Link>
           </div>
         </div>

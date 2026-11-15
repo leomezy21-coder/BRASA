@@ -29,37 +29,43 @@ export const HarmonizationChart: React.FC = () => {
   useEffect(() => {
     const ac = new AbortController()
     const base: Omit<BaseFilterParams, 'sensor'> = {
+      country_code: filters.country || 'ECU',
       year_from: filters.yearRange[0],
       year_to: filters.yearRange[1],
       confidence: filters.confidence,
       daynight: filters.daynight,
-      province_id: filters.provinceId,
       canton_id: filters.cantonId,
-      geojson: filters.customGeometry?.geojson,
     }
     const sensors: SensorType[] = ['harmonized', 'modis', 'viirs']
 
-    setIsLoading(true)
+    if (!data.harmonized) {
+      setIsLoading(true)
+    }
     setError(false)
-    Promise.all(sensors.map((sensor) => fetchCalendar({ ...base, sensor }, ac.signal)))
-      .then(([harmonized, modis, viirs]) => {
-        setData({ harmonized, modis, viirs })
-        setIsLoading(false)
-      })
-      .catch((err) => {
-        if (err?.name === 'AbortError') return
-        setError(true)
-        setIsLoading(false)
-      })
 
-    return () => ac.abort()
+    const timer = setTimeout(() => {
+      Promise.all(sensors.map((sensor) => fetchCalendar({ ...base, sensor }, ac.signal)))
+        .then(([harmonized, modis, viirs]) => {
+          setData({ harmonized, modis, viirs })
+          setIsLoading(false)
+        })
+        .catch((err) => {
+          if (err?.name === 'AbortError') return
+          setError(true)
+          setIsLoading(false)
+        })
+    }, 300)
+
+    return () => {
+      clearTimeout(timer)
+      ac.abort()
+    }
   }, [
+    filters.country,
     filters.yearRange,
     filters.confidence,
     filters.daynight,
-    filters.provinceId,
     filters.cantonId,
-    filters.customGeometry?.geojson,
   ])
 
   const { years, modis, viirs, harmonized, ratio } = useMemo(() => {

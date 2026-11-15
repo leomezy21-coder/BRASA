@@ -3,14 +3,12 @@ import {
   Filter,
   RotateCcw,
   Search,
-  Upload,
-  Circle,
-  Shapes,
   ChevronDown,
 } from 'lucide-react'
 import { useFilters } from '../hooks/useFilters'
 import type { RegionsResponse, SensorType, ConfidenceLevel, DayNight } from '../types'
-import { circleToPolygonGeoJSON } from '../utils/geoUtils'
+import { COUNTRIES, CONTINENTS, getCountriesForContinent, getCitiesForCountry } from '../utils/territoryData'
+import { MONTHS_LONG, MONTHS_SHORT, weekToMonth, firstWeekOfMonth } from '../utils/monthly'
 
 interface FiltersPanelProps {
   regions: RegionsResponse | null
@@ -27,62 +25,26 @@ export const FiltersPanel: React.FC<FiltersPanelProps> = ({
 }) => {
   const {
     filters,
-    coverageRadiusMeters,
-    setCoverageRadiusMeters,
-    setProvinceId,
+    selectedWeek,
+    setSelectedWeek,
+    setContinent,
+    setCountry,
     setCantonId,
     setYearRange,
     setSelectedYear,
     setSensor,
     setConfidence,
     setDayNight,
-    setCustomGeometry,
     resetFilters,
     triggerAnalyze,
   } = useFilters()
 
   const [mobileDrawerOpen, setMobileDrawerOpen] = useState<boolean>(false)
-  const [geoJsonFileName, setGeoJsonFileName] = useState<string | null>(null)
-  const [coverageMode, setCoverageMode] = useState<'circle' | 'polygon'>('circle')
 
-  const selectedRegion = regions?.find((r) => r.id === filters.provinceId) || regions?.[0]
-  const cantons = selectedRegion?.cantons || []
-
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (!file) return
-
-    const reader = new FileReader()
-    reader.onload = (event) => {
-      try {
-        const text = event.target?.result as string
-        const parsed = JSON.parse(text)
-        setCustomGeometry({
-          type: 'polygon',
-          geojson: parsed,
-        })
-        setGeoJsonFileName(file.name)
-        setCoverageMode('polygon')
-      } catch (err) {
-        alert('El archivo no contiene un formato GeoJSON válido.')
-        console.error(err)
-      }
-    }
-    reader.readAsText(file)
-  }
-
-  const handleSliderChange = (newRadius: number) => {
-    setCoverageMode('circle')
-    setCoverageRadiusMeters(newRadius)
-  }
-
-  const handleApplyCircle = () => {
-    setCoverageMode('circle')
-    handleSliderChange(coverageRadiusMeters)
-    if (onTriggerDrawCircle) {
-      onTriggerDrawCircle(coverageRadiusMeters)
-    }
-  }
+  const currentMonth = weekToMonth(filters.selectedYear, selectedWeek)
+  const filteredCountries = getCountriesForContinent(filters.continent)
+  const availableCities = getCitiesForCountry(filters.country)
+  const selectedCity = availableCities.find((c) => c.id === filters.cantonId)
 
   const content = (
     <div className="space-y-4 text-xs font-sans">
@@ -103,149 +65,97 @@ export const FiltersPanel: React.FC<FiltersPanelProps> = ({
         </button>
       </div>
 
-      {/* 2. Ubicación territorial */}
-      <div className="space-y-2">
+      {/* 2. Ubicación territorial: Continente, País y Ciudad */}
+      <div className="space-y-3">
         <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider">
           UBICACIÓN TERRITORIAL
         </label>
+
+        {/* Filtro de Continente */}
         <div>
-          <span className="text-xs text-slate-400 font-medium block mb-1">País</span>
-          <input
-            type="text"
-            readOnly
-            value="Ecuador"
-            className="w-full bg-[#F4F6F9] border border-slate-200 rounded-xl px-3 py-2 text-[#0B2D5B] font-bold cursor-not-allowed text-xs"
-          />
-        </div>
-
-        <div className="grid grid-cols-2 gap-2">
-          <div>
-            <label htmlFor="province-select" className="text-xs text-slate-400 font-medium block mb-1">
-              Provincia
-            </label>
-            <div className="relative">
-              <select
-                id="province-select"
-                value={filters.provinceId}
-                onChange={(e) => {
-                  const reg = regions?.find((r) => r.id === e.target.value)
-                  setProvinceId(e.target.value, reg?.center)
-                }}
-                className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 pr-7 text-xs font-bold text-slate-700 focus:ring-1 focus:ring-[#FF7900] focus:outline-hidden appearance-none shadow-2xs"
-              >
-                {regions?.map((r) => (
-                  <option key={r.id} value={r.id}>
-                    {r.name}
-                  </option>
-                )) || <option value="chimborazo">Chimborazo</option>}
-              </select>
-              <ChevronDown className="w-3.5 h-3.5 text-slate-400 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
-            </div>
-          </div>
-
-          <div>
-            <label htmlFor="canton-select" className="text-xs text-slate-400 font-medium block mb-1">
-              Ciudad / Cantón
-            </label>
-            <div className="relative">
-              <select
-                id="canton-select"
-                value={filters.cantonId}
-                onChange={(e) => {
-                  const c = cantons.find((item) => item.id === e.target.value)
-                  setCantonId(e.target.value, c ? [c.lat, c.lon] : undefined)
-                }}
-                className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 pr-7 text-xs font-bold text-slate-700 focus:ring-1 focus:ring-[#FF7900] focus:outline-hidden appearance-none shadow-2xs"
-              >
-                <option value="">(Toda la provincia)</option>
-                {cantons.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.name}
-                  </option>
-                ))}
-              </select>
-              <ChevronDown className="w-3.5 h-3.5 text-slate-400 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* 3. Área de cobertura */}
-      <div className="space-y-2 pt-1 border-t border-slate-100">
-        <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider">
-          ÁREA DE COBERTURA
-        </label>
-        <div className="grid grid-cols-2 gap-2">
-          <button
-            type="button"
-            onClick={handleApplyCircle}
-            className={`flex items-center justify-center gap-2 px-3 py-2 rounded-xl text-xs font-bold transition-all border ${
-              coverageMode === 'circle'
-                ? 'bg-[#FFF2E6] text-[#FF7900] border-[#FF7900] shadow-xs'
-                : 'bg-white hover:bg-[#F4F6F9] text-slate-700 border-slate-200 shadow-2xs'
-            }`}
-          >
-            <div
-              className={`w-3.5 h-3.5 rounded-full border flex items-center justify-center ${
-                coverageMode === 'circle' ? 'border-[#FF7900]' : 'border-slate-400'
-              }`}
+          <label htmlFor="continent-select" className="text-xs text-slate-400 font-medium block mb-1">
+            Continente
+          </label>
+          <div className="relative">
+            <select
+              id="continent-select"
+              value={filters.continent || ''}
+              onChange={(e) => setContinent(e.target.value)}
+              className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 pr-7 text-xs font-bold text-[#0B2D5B] focus:ring-1 focus:ring-[#FF7900] focus:outline-hidden appearance-none shadow-2xs cursor-pointer"
             >
-              {coverageMode === 'circle' && <div className="w-2 h-2 rounded-full bg-[#FF7900]" />}
-            </div>
-            <span>Radio {(coverageRadiusMeters / 1000).toFixed(0)} km</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => {
-              setCoverageMode('polygon')
-              onTriggerDrawPolygon?.()
-            }}
-            className={`flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold transition-all border ${
-              coverageMode === 'polygon'
-                ? 'bg-[#FFF2E6] text-[#FF7900] border-[#FF7900] shadow-xs'
-                : 'bg-white hover:bg-[#F4F6F9] text-slate-700 border-slate-200 shadow-2xs'
-            }`}
-          >
-            <Shapes className="w-3.5 h-3.5" />
-            <span>Dibujar polígono</span>
-          </button>
-        </div>
-
-        {/* Radio del búfer slider */}
-        <div className="pt-0.5">
-          <div className="flex justify-between text-[11px] font-bold text-slate-600 mb-1">
-            <span>Radio del búfer</span>
-            <span className="text-[#0B2D5B] font-black">
-              {(coverageRadiusMeters / 1000).toFixed(1)} km ({coverageRadiusMeters} m)
-            </span>
+              <option value="">(Todos los continentes)</option>
+              {CONTINENTS.map((cont) => (
+                <option key={cont} value={cont}>
+                  {cont}
+                </option>
+              ))}
+            </select>
+            <ChevronDown className="w-3.5 h-3.5 text-slate-400 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
           </div>
-          <input
-            type="range"
-            min={2000}
-            max={60000}
-            step={500}
-            value={coverageRadiusMeters}
-            onChange={(e) => handleSliderChange(Number(e.target.value))}
-            className="w-full h-1.5 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-[#FF7900]"
-          />
         </div>
 
-        {/* Cargar GeoJSON personalizado */}
-        <label className="flex items-center justify-center gap-2 p-2 border border-dashed border-slate-300 rounded-xl cursor-pointer hover:bg-[#F4F6F9] transition-colors text-xs text-slate-600 font-semibold mt-1">
-          <Upload className="w-3.5 h-3.5 text-slate-400" />
-          <span className="truncate">
-            {geoJsonFileName ? geoJsonFileName : 'Cargar GeoJSON personalizado'}
-          </span>
-          <input
-            type="file"
-            accept=".geojson,.json"
-            onChange={handleFileUpload}
-            className="hidden"
-          />
-        </label>
+        {/* Filtro de País */}
+        <div>
+          <label htmlFor="country-select" className="text-xs text-slate-400 font-medium block mb-1">
+            País ({filteredCountries.length} disponibles)
+          </label>
+          <div className="relative">
+            <select
+              id="country-select"
+              value={filters.country}
+              onChange={(e) => {
+                const c = filteredCountries.find((item) => item.code === e.target.value) || COUNTRIES.find((item) => item.code === e.target.value)
+                setCountry(
+                  e.target.value,
+                  c?.name.replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑ ]/g, '').trim(),
+                  c ? [c.lat, c.lon] : undefined
+                )
+              }}
+              className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 pr-7 text-xs font-bold text-[#0B2D5B] focus:ring-1 focus:ring-[#FF7900] focus:outline-hidden appearance-none shadow-2xs cursor-pointer"
+            >
+              {filteredCountries.map((c) => (
+                <option key={c.code} value={c.code}>
+                  {c.name} ({c.code})
+                </option>
+              ))}
+            </select>
+            <ChevronDown className="w-3.5 h-3.5 text-slate-400 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+          </div>
+        </div>
+
+        <div>
+          <label htmlFor="city-select" className="text-xs text-slate-400 font-medium block mb-1">
+            Ciudad / Cantón ({availableCities.length} disponibles)
+          </label>
+          <div className="relative">
+            <select
+              id="city-select"
+              value={filters.cantonId}
+              onChange={(e) => {
+                const selectedId = e.target.value
+                if (!selectedId) {
+                  const c = COUNTRIES.find((item) => item.code === filters.country)
+                  setCantonId('', c ? [c.lat, c.lon] : undefined)
+                } else {
+                  const city = availableCities.find((item) => item.id === selectedId)
+                  setCantonId(selectedId, city ? [city.lat, city.lon] : undefined)
+                }
+              }}
+              className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 pr-7 text-xs font-bold text-slate-700 focus:ring-1 focus:ring-[#FF7900] focus:outline-hidden appearance-none shadow-2xs cursor-pointer"
+            >
+              <option value="">(Todo el país / Todas las ciudades)</option>
+              {availableCities.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.name}
+                </option>
+              ))}
+            </select>
+            <ChevronDown className="w-3.5 h-3.5 text-slate-400 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+          </div>
+        </div>
       </div>
 
-      {/* 4. Período histórico */}
+      {/* 3. Período histórico */}
       <div className="space-y-2 pt-1 border-t border-slate-100">
         <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider">
           PERÍODO HISTÓRICO
@@ -256,13 +166,15 @@ export const FiltersPanel: React.FC<FiltersPanelProps> = ({
             <div className="relative">
               <select
                 value={filters.yearRange[0]}
-                onChange={(e) =>
-                  setYearRange([Number(e.target.value), filters.yearRange[1]])
-                }
-                className="w-full bg-white border border-slate-200 rounded-xl px-3 py-1.5 pr-7 text-xs font-bold text-slate-700 shadow-2xs appearance-none"
+                onChange={(e) => {
+                  const newFrom = Number(e.target.value)
+                  const newTo = Math.max(newFrom, filters.yearRange[1])
+                  setYearRange([newFrom, newTo])
+                }}
+                className="w-full bg-white border border-slate-200 rounded-xl px-3 py-1.5 pr-7 text-xs font-bold text-slate-700 shadow-2xs appearance-none cursor-pointer"
               >
-                {Array.from({ length: 25 }, (_, i) => 2001 + i).map((y) => (
-                  <option key={y} value={y} disabled={y > filters.yearRange[1]}>
+                {Array.from({ length: 21 }, (_, i) => 2005 + i).map((y) => (
+                  <option key={y} value={y}>
                     {y}
                   </option>
                 ))}
@@ -275,13 +187,15 @@ export const FiltersPanel: React.FC<FiltersPanelProps> = ({
             <div className="relative">
               <select
                 value={filters.yearRange[1]}
-                onChange={(e) =>
-                  setYearRange([filters.yearRange[0], Number(e.target.value)])
-                }
-                className="w-full bg-white border border-slate-200 rounded-xl px-3 py-1.5 pr-7 text-xs font-bold text-slate-700 shadow-2xs appearance-none"
+                onChange={(e) => {
+                  const newTo = Number(e.target.value)
+                  const newFrom = Math.min(newTo, filters.yearRange[0])
+                  setYearRange([newFrom, newTo])
+                }}
+                className="w-full bg-white border border-slate-200 rounded-xl px-3 py-1.5 pr-7 text-xs font-bold text-slate-700 shadow-2xs appearance-none cursor-pointer"
               >
-                {Array.from({ length: 25 }, (_, i) => 2001 + i).map((y) => (
-                  <option key={y} value={y} disabled={y < filters.yearRange[0]}>
+                {Array.from({ length: 21 }, (_, i) => 2005 + i).map((y) => (
+                  <option key={y} value={y}>
                     {y}
                   </option>
                 ))}
@@ -299,19 +213,72 @@ export const FiltersPanel: React.FC<FiltersPanelProps> = ({
             <select
               id="selected-year-select"
               value={filters.selectedYear}
-              onChange={(e) => setSelectedYear(Number(e.target.value))}
-              className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 pr-7 text-xs font-black text-slate-800 shadow-2xs appearance-none"
+              onChange={(e) => {
+                const y = Number(e.target.value)
+                setSelectedYear(y)
+                // Asegurar que el rango histórico cubra el año seleccionado
+                if (y < filters.yearRange[0]) {
+                  setYearRange([y, filters.yearRange[1]])
+                } else if (y > filters.yearRange[1]) {
+                  setYearRange([filters.yearRange[0], y])
+                }
+              }}
+              className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 pr-7 text-xs font-black text-slate-800 shadow-2xs appearance-none cursor-pointer"
             >
-              {Array.from(
-                { length: filters.yearRange[1] - filters.yearRange[0] + 1 },
-                (_, i) => filters.yearRange[0] + i
-              ).map((y) => (
+              {Array.from({ length: 21 }, (_, i) => 2005 + i).map((y) => (
                 <option key={y} value={y}>
                   {y}{y === 2024 || y === 2012 ? ' · temporada crítica' : ''}
                 </option>
               ))}
             </select>
             <ChevronDown className="w-3.5 h-3.5 text-slate-400 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+          </div>
+        </div>
+
+        {/* Filtro de Mes */}
+        <div>
+          <label htmlFor="selected-month-select" className="text-xs text-slate-400 font-medium block mb-1">
+            Mes en foco
+          </label>
+          <div className="relative">
+            <select
+              id="selected-month-select"
+              value={currentMonth}
+              onChange={(e) => {
+                const m = Number(e.target.value)
+                setSelectedWeek(firstWeekOfMonth(filters.selectedYear, m))
+              }}
+              className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 pr-7 text-xs font-black text-slate-800 shadow-2xs appearance-none cursor-pointer"
+            >
+              {MONTHS_LONG.map((name, idx) => (
+                <option key={name} value={idx}>
+                  {name} {idx === 8 || idx === 7 ? '· temporada seca' : ''}
+                </option>
+              ))}
+            </select>
+            <ChevronDown className="w-3.5 h-3.5 text-slate-400 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+          </div>
+
+          {/* Cuadrícula interactiva de 12 meses idéntica al diseño anterior */}
+          <div className="grid grid-cols-6 gap-1 mt-2">
+            {MONTHS_SHORT.map((mShort, idx) => {
+              const isSelected = currentMonth === idx
+              return (
+                <button
+                  key={mShort}
+                  type="button"
+                  onClick={() => setSelectedWeek(firstWeekOfMonth(filters.selectedYear, idx))}
+                  className={`py-1.5 text-[11px] rounded-lg font-bold transition-all text-center ${
+                    isSelected
+                      ? 'bg-[#0B2D5B] text-white shadow-2xs'
+                      : 'bg-slate-50 text-slate-600 hover:bg-orange-50 hover:text-[#FF7900] border border-slate-200/60'
+                  }`}
+                  title={`${MONTHS_LONG[idx]} ${filters.selectedYear}`}
+                >
+                  {mShort}
+                </button>
+              )
+            })}
           </div>
         </div>
       </div>
@@ -400,7 +367,7 @@ export const FiltersPanel: React.FC<FiltersPanelProps> = ({
   return (
     <>
       <div
-        className={`bg-white rounded-[28px] p-6 border border-slate-200/70 hidden lg:block ${className}`}
+        className={`bg-white rounded-[28px] p-6 border border-slate-200/70 hidden lg:block sticky top-24 self-start max-h-[calc(100vh-110px)] overflow-y-auto ${className}`}
       >
         {content}
       </div>
@@ -414,7 +381,7 @@ export const FiltersPanel: React.FC<FiltersPanelProps> = ({
           aria-label="Abrir panel de filtros"
         >
           <Filter className="w-4 h-4" />
-          <span>Filtros ({selectedRegion?.name})</span>
+          <span>Filtros ({selectedCity ? selectedCity.name : filters.countryName || 'Territorio'})</span>
         </button>
 
         {mobileDrawerOpen && (

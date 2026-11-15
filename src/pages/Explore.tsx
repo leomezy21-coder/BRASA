@@ -1,4 +1,6 @@
 import React from 'react'
+import { Link } from 'react-router-dom'
+import { Wind } from 'lucide-react'
 import { useBrasaData } from '../hooks/useBrasaData'
 import { useFilters } from '../hooks/useFilters'
 import { FiltersPanel } from '../components/FiltersPanel'
@@ -9,7 +11,7 @@ import { TimelinePlayer } from '../components/TimelinePlayer'
 import { ExportControls } from '../components/ExportControls'
 import { ErrorMessage } from '../components/ErrorMessage'
 import { HarmonizationChart } from '../components/HarmonizationChart'
-import { MonthlyCalendar } from '../components/MonthlyCalendar'
+import { getCitiesForCountry, getProvincesForCountry } from '../utils/territoryData'
 
 const SectionLabel: React.FC<{ title: string; note: string }> = ({ title, note }) => (
   <div className="flex items-baseline gap-3 pt-2">
@@ -41,8 +43,13 @@ export const Explore: React.FC = () => {
     refetch,
   } = useBrasaData()
 
-  const selectedRegion = regions?.find((r) => r.id === filters.provinceId) || regions?.[0]
-  const selectedCanton = selectedRegion?.cantons?.find((c) => c.id === filters.cantonId)
+  const availableProvinces = getProvincesForCountry(filters.country)
+  const availableCities = getCitiesForCountry(filters.country)
+  const selectedRegion =
+    availableProvinces.find((r) => r.id === filters.provinceId) ||
+    regions?.find((r) => r.id === filters.provinceId) ||
+    availableProvinces[0]
+  const selectedCanton = availableCities.find((c) => c.id === filters.cantonId)
 
   const handleSelectWeekAndYear = (year: number, week: number) => {
     setSelectedYear(year)
@@ -62,19 +69,34 @@ export const Explore: React.FC = () => {
         <div>
           <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-[#FF7900]">Dashboard</p>
           <h1 className="mt-3 text-4xl sm:text-5xl font-black tracking-tight leading-none">Explorar</h1>
-          <p className="mt-3 text-slate-500">
-            {selectedCanton ? selectedCanton.name : 'Riobamba'}, {selectedRegion?.name || 'Chimborazo'}
+          <p className="mt-3 text-slate-500 font-medium">
+            {selectedCanton ? (
+              <span className="font-bold text-[#0B1B3D]">{selectedCanton.name} · </span>
+            ) : (
+              <span>Nivel Nacional · </span>
+            )}
+            <span className="font-bold text-[#FF7900]">{filters.countryName || 'Ecuador'}</span>
           </p>
         </div>
 
-        <ExportControls
-          calendar={calendar}
-          hotspots={hotspots}
-          climatology={climatology}
-          anomalies={anomalies}
-          selectedYear={filters.selectedYear}
-          selectedWeek={selectedWeek}
-        />
+        <div className="flex flex-wrap items-center gap-3">
+          <Link
+            to="/simulador"
+            className="inline-flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-[#0B1B3D] to-[#1E293B] text-white rounded-xl text-xs sm:text-sm font-bold hover:shadow-md transition-all border border-slate-700/50"
+          >
+            <Wind className="w-4 h-4 text-[#FF7900] animate-pulse" />
+            <span>Simulador Táctico FireCast</span>
+          </Link>
+
+          <ExportControls
+            calendar={calendar}
+            hotspots={hotspots}
+            climatology={climatology}
+            anomalies={anomalies}
+            selectedYear={filters.selectedYear}
+            selectedWeek={selectedWeek}
+          />
+        </div>
       </header>
 
       {error && <ErrorMessage message={error} onRetry={refetch} />}
@@ -111,17 +133,8 @@ export const Explore: React.FC = () => {
             peakWeek={peakWeek}
           />
 
-          <MonthlyCalendar
-            calendar={calendar}
-            anomalies={anomalies}
-            selectedYear={filters.selectedYear}
-            selectedWeek={selectedWeek}
-            isLoading={isLoading}
-            onSelectWeek={handleSelectWeekAndYear}
-          />
-
           <div className="pt-6">
-            <SectionLabel title="Serie histórica" note="2001–2025" />
+            <SectionLabel title="Serie histórica" note="2005–2025" />
           </div>
 
           <FireCalendar
@@ -137,7 +150,7 @@ export const Explore: React.FC = () => {
 
         {/* Filtros */}
         <div className="lg:col-span-4">
-          <FiltersPanel regions={regions} />
+          <FiltersPanel regions={availableProvinces} />
         </div>
       </div>
     </div>

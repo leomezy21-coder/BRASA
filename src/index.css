@@ -30,6 +30,15 @@ body {
   border-radius: 1.25rem;
 }
 
+/* Fix for links and buttons inside Leaflet popups */
+.leaflet-popup-content-wrapper a,
+.leaflet-popup-content a,
+.leaflet-popup-content a span,
+.leaflet-popup-content a svg {
+  color: #ffffff !important;
+  text-decoration: none !important;
+}
+
 /* Custom scrollbar for data tables and panels */
 ::-webkit-scrollbar {
   width: 6px;

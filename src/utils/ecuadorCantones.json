@@ -1,0 +1,1328 @@
+[
+  {
+    "id": "cuenca",
+    "name": "Cuenca",
+    "lat": -2.9001,
+    "lon": -79.0059
+  },
+  {
+    "id": "gualaceo",
+    "name": "Gualaceo",
+    "lat": -2.89,
+    "lon": -78.78
+  },
+  {
+    "id": "paute",
+    "name": "Paute",
+    "lat": -2.78,
+    "lon": -78.76
+  },
+  {
+    "id": "camilo_ponce",
+    "name": "Camilo Ponce Enríquez",
+    "lat": -3.06,
+    "lon": -79.74
+  },
+  {
+    "id": "chordeleg",
+    "name": "Chordeleg",
+    "lat": -2.92,
+    "lon": -78.77
+  },
+  {
+    "id": "el_pan",
+    "name": "El Pan",
+    "lat": -2.79,
+    "lon": -78.67
+  },
+  {
+    "id": "giron",
+    "name": "Girón",
+    "lat": -3.16,
+    "lon": -79.15
+  },
+  {
+    "id": "guachapala",
+    "name": "Guachapala",
+    "lat": -2.77,
+    "lon": -78.71
+  },
+  {
+    "id": "nabon",
+    "name": "Nabón",
+    "lat": -3.34,
+    "lon": -79.06
+  },
+  {
+    "id": "ona",
+    "name": "Oña",
+    "lat": -3.47,
+    "lon": -79.15
+  },
+  {
+    "id": "pucara",
+    "name": "Pucará",
+    "lat": -3.22,
+    "lon": -79.47
+  },
+  {
+    "id": "san_fernando",
+    "name": "San Fernando",
+    "lat": -3.15,
+    "lon": -79.25
+  },
+  {
+    "id": "santa_isabel",
+    "name": "Santa Isabel",
+    "lat": -3.27,
+    "lon": -79.31
+  },
+  {
+    "id": "sevilla_oro",
+    "name": "Sevilla de Oro",
+    "lat": -2.8,
+    "lon": -78.65
+  },
+  {
+    "id": "sigsig",
+    "name": "Sígsig",
+    "lat": -3.05,
+    "lon": -78.79
+  },
+  {
+    "id": "guaranda",
+    "name": "Guaranda",
+    "lat": -1.59,
+    "lon": -79
+  },
+  {
+    "id": "caluma",
+    "name": "Caluma",
+    "lat": -1.63,
+    "lon": -79.25
+  },
+  {
+    "id": "chillanes",
+    "name": "Chillanes",
+    "lat": -1.94,
+    "lon": -79.07
+  },
+  {
+    "id": "chimbo",
+    "name": "Chimbo",
+    "lat": -1.65,
+    "lon": -79.03
+  },
+  {
+    "id": "echeandia",
+    "name": "Echeandía",
+    "lat": -1.43,
+    "lon": -79.28
+  },
+  {
+    "id": "las_naves",
+    "name": "Las Naves",
+    "lat": -1.45,
+    "lon": -79.32
+  },
+  {
+    "id": "san_miguel_b",
+    "name": "San Miguel (Bolívar)",
+    "lat": -1.71,
+    "lon": -79.04
+  },
+  {
+    "id": "azogues",
+    "name": "Azogues",
+    "lat": -2.74,
+    "lon": -78.84
+  },
+  {
+    "id": "biblian",
+    "name": "Biblián",
+    "lat": -2.71,
+    "lon": -78.89
+  },
+  {
+    "id": "canar",
+    "name": "Cañar",
+    "lat": -2.56,
+    "lon": -78.93
+  },
+  {
+    "id": "deleg",
+    "name": "Déleg",
+    "lat": -2.78,
+    "lon": -78.92
+  },
+  {
+    "id": "el_tambo",
+    "name": "El Tambo",
+    "lat": -2.51,
+    "lon": -78.93
+  },
+  {
+    "id": "la_troncal",
+    "name": "La Troncal",
+    "lat": -2.42,
+    "lon": -79.34
+  },
+  {
+    "id": "suscal",
+    "name": "Suscal",
+    "lat": -2.44,
+    "lon": -79.05
+  },
+  {
+    "id": "tulcan",
+    "name": "Tulcán",
+    "lat": 0.8122,
+    "lon": -77.7173
+  },
+  {
+    "id": "bolivar_c",
+    "name": "Bolívar (Carchi)",
+    "lat": 0.5,
+    "lon": -77.9
+  },
+  {
+    "id": "espejo",
+    "name": "Espejo (El Ángel)",
+    "lat": 0.6247,
+    "lon": -77.9392
+  },
+  {
+    "id": "mira",
+    "name": "Mira",
+    "lat": 0.5514,
+    "lon": -78.0408
+  },
+  {
+    "id": "montufar",
+    "name": "Montúfar (San Gabriel)",
+    "lat": 0.6019,
+    "lon": -77.8286
+  },
+  {
+    "id": "san_pedro_huaca",
+    "name": "San Pedro de Huaca",
+    "lat": 0.63,
+    "lon": -77.72
+  },
+  {
+    "id": "riobamba",
+    "name": "Riobamba",
+    "lat": -1.6709,
+    "lon": -78.6545
+  },
+  {
+    "id": "alausi",
+    "name": "Alausí",
+    "lat": -2.2,
+    "lon": -78.85
+  },
+  {
+    "id": "chambo",
+    "name": "Chambo",
+    "lat": -1.73,
+    "lon": -78.59
+  },
+  {
+    "id": "chunchi",
+    "name": "Chunchi",
+    "lat": -2.29,
+    "lon": -78.92
+  },
+  {
+    "id": "colta",
+    "name": "Colta",
+    "lat": -1.72,
+    "lon": -78.77
+  },
+  {
+    "id": "cumanda",
+    "name": "Cumandá",
+    "lat": -2.2,
+    "lon": -79.13
+  },
+  {
+    "id": "guamote",
+    "name": "Guamote",
+    "lat": -1.93,
+    "lon": -78.71
+  },
+  {
+    "id": "guano",
+    "name": "Guano",
+    "lat": -1.6,
+    "lon": -78.63
+  },
+  {
+    "id": "pallatanga",
+    "name": "Pallatanga",
+    "lat": -1.99,
+    "lon": -78.96
+  },
+  {
+    "id": "penipe",
+    "name": "Penipe",
+    "lat": -1.57,
+    "lon": -78.53
+  },
+  {
+    "id": "latacunga",
+    "name": "Latacunga",
+    "lat": -0.9333,
+    "lon": -78.6167
+  },
+  {
+    "id": "la_mana",
+    "name": "La Maná",
+    "lat": -0.94,
+    "lon": -79.22
+  },
+  {
+    "id": "pangua",
+    "name": "Pangua (El Corazón)",
+    "lat": -1.13,
+    "lon": -79.08
+  },
+  {
+    "id": "pujili",
+    "name": "Pujilí",
+    "lat": -0.9575,
+    "lon": -78.6967
+  },
+  {
+    "id": "salcedo",
+    "name": "Salcedo",
+    "lat": -1.0456,
+    "lon": -78.5906
+  },
+  {
+    "id": "saquisili",
+    "name": "Saquisilí",
+    "lat": -0.8383,
+    "lon": -78.6664
+  },
+  {
+    "id": "sigchos",
+    "name": "Sigchos",
+    "lat": -0.7,
+    "lon": -78.89
+  },
+  {
+    "id": "machala",
+    "name": "Machala",
+    "lat": -3.2586,
+    "lon": -79.9554
+  },
+  {
+    "id": "arenillas",
+    "name": "Arenillas",
+    "lat": -3.55,
+    "lon": -80.07
+  },
+  {
+    "id": "atahualpa",
+    "name": "Atahualpa (Paccha)",
+    "lat": -3.59,
+    "lon": -79.67
+  },
+  {
+    "id": "balsas",
+    "name": "Balsas",
+    "lat": -3.76,
+    "lon": -79.82
+  },
+  {
+    "id": "chilla",
+    "name": "Chilla",
+    "lat": -3.45,
+    "lon": -79.59
+  },
+  {
+    "id": "el_guabo",
+    "name": "El Guabo",
+    "lat": -3.24,
+    "lon": -79.83
+  },
+  {
+    "id": "huaquillas",
+    "name": "Huaquillas",
+    "lat": -3.48,
+    "lon": -80.23
+  },
+  {
+    "id": "las_lajas",
+    "name": "Las Lajas (La Victoria)",
+    "lat": -3.79,
+    "lon": -80.06
+  },
+  {
+    "id": "marcabeli",
+    "name": "Marcabelí",
+    "lat": -3.79,
+    "lon": -79.91
+  },
+  {
+    "id": "pasaje",
+    "name": "Pasaje",
+    "lat": -3.3256,
+    "lon": -79.8067
+  },
+  {
+    "id": "pinas",
+    "name": "Piñas",
+    "lat": -3.68,
+    "lon": -79.68
+  },
+  {
+    "id": "portovelo",
+    "name": "Portovelo",
+    "lat": -3.72,
+    "lon": -79.62
+  },
+  {
+    "id": "santa_rosa",
+    "name": "Santa Rosa",
+    "lat": -3.4486,
+    "lon": -79.9594
+  },
+  {
+    "id": "zaruma",
+    "name": "Zaruma",
+    "lat": -3.69,
+    "lon": -79.61
+  },
+  {
+    "id": "esmeraldas",
+    "name": "Esmeraldas",
+    "lat": 0.9592,
+    "lon": -79.6539
+  },
+  {
+    "id": "atacames",
+    "name": "Atacames",
+    "lat": 0.87,
+    "lon": -79.85
+  },
+  {
+    "id": "eloy_alfaro",
+    "name": "Eloy Alfaro (Valdez)",
+    "lat": 1.25,
+    "lon": -78.98
+  },
+  {
+    "id": "muisne",
+    "name": "Muisne",
+    "lat": 0.61,
+    "lon": -80.02
+  },
+  {
+    "id": "quininde",
+    "name": "Quinindé (Rosa Zárate)",
+    "lat": 0.33,
+    "lon": -79.47
+  },
+  {
+    "id": "rioverde",
+    "name": "Rioverde",
+    "lat": 1.07,
+    "lon": -79.4
+  },
+  {
+    "id": "san_lorenzo",
+    "name": "San Lorenzo",
+    "lat": 1.28,
+    "lon": -78.83
+  },
+  {
+    "id": "san_cristobal",
+    "name": "San Cristóbal (Pto. Baquerizo)",
+    "lat": -0.9022,
+    "lon": -89.6097
+  },
+  {
+    "id": "isabela",
+    "name": "Isabela (Pto. Villamil)",
+    "lat": -0.9556,
+    "lon": -90.9667
+  },
+  {
+    "id": "santa_cruz",
+    "name": "Santa Cruz (Pto. Ayora)",
+    "lat": -0.7402,
+    "lon": -90.3138
+  },
+  {
+    "id": "guayaquil",
+    "name": "Guayaquil",
+    "lat": -2.1894,
+    "lon": -79.8891
+  },
+  {
+    "id": "alfredo_baquerizo",
+    "name": "Alfredo Baquerizo Moreno (Juján)",
+    "lat": -1.9,
+    "lon": -79.52
+  },
+  {
+    "id": "balao",
+    "name": "Balao",
+    "lat": -2.91,
+    "lon": -79.72
+  },
+  {
+    "id": "balzar",
+    "name": "Balzar",
+    "lat": -1.36,
+    "lon": -79.9
+  },
+  {
+    "id": "colimes",
+    "name": "Colimes",
+    "lat": -1.55,
+    "lon": -80.01
+  },
+  {
+    "id": "daule",
+    "name": "Daule",
+    "lat": -1.8622,
+    "lon": -79.9781
+  },
+  {
+    "id": "duran",
+    "name": "Durán",
+    "lat": -2.17,
+    "lon": -79.82
+  },
+  {
+    "id": "el_empalme",
+    "name": "El Empalme (Velasco Ibarra)",
+    "lat": -1.04,
+    "lon": -79.64
+  },
+  {
+    "id": "el_triunfo",
+    "name": "El Triunfo",
+    "lat": -2.33,
+    "lon": -79.4
+  },
+  {
+    "id": "general_elizalde",
+    "name": "General Antonio Elizalde (Bucay)",
+    "lat": -2.2,
+    "lon": -79.13
+  },
+  {
+    "id": "isidro_ayora",
+    "name": "Isidro Ayora",
+    "lat": -1.88,
+    "lon": -80.14
+  },
+  {
+    "id": "lomas_sargentillo",
+    "name": "Lomas de Sargentillo",
+    "lat": -1.88,
+    "lon": -80.08
+  },
+  {
+    "id": "marcelino_mariduena",
+    "name": "Marcelino Maridueña",
+    "lat": -2.21,
+    "lon": -79.43
+  },
+  {
+    "id": "milagro",
+    "name": "Milagro",
+    "lat": -2.13,
+    "lon": -79.59
+  },
+  {
+    "id": "naranjal",
+    "name": "Naranjal",
+    "lat": -2.67,
+    "lon": -79.62
+  },
+  {
+    "id": "naranjito",
+    "name": "Naranjito",
+    "lat": -2.17,
+    "lon": -79.47
+  },
+  {
+    "id": "nobol",
+    "name": "Nobol (Narcisa de Jesús)",
+    "lat": -1.91,
+    "lon": -79.98
+  },
+  {
+    "id": "palestina",
+    "name": "Palestina",
+    "lat": -1.62,
+    "lon": -79.93
+  },
+  {
+    "id": "pedro_carbo",
+    "name": "Pedro Carbo",
+    "lat": -1.82,
+    "lon": -80.23
+  },
+  {
+    "id": "playas",
+    "name": "Playas (General Villamil)",
+    "lat": -2.63,
+    "lon": -80.39
+  },
+  {
+    "id": "salitre",
+    "name": "Salitre (El Salitre)",
+    "lat": -1.83,
+    "lon": -79.82
+  },
+  {
+    "id": "samborondon",
+    "name": "Samborondón",
+    "lat": -1.9628,
+    "lon": -79.7242
+  },
+  {
+    "id": "santa_lucia",
+    "name": "Santa Lucía",
+    "lat": -1.72,
+    "lon": -79.98
+  },
+  {
+    "id": "simon_bolivar",
+    "name": "Simón Bolívar",
+    "lat": -2,
+    "lon": -79.48
+  },
+  {
+    "id": "yaguachi",
+    "name": "Yaguachi (San Jacinto)",
+    "lat": -2.09,
+    "lon": -79.69
+  },
+  {
+    "id": "ibarra",
+    "name": "Ibarra",
+    "lat": 0.3517,
+    "lon": -78.1223
+  },
+  {
+    "id": "antonio_ante",
+    "name": "Antonio Ante (Atuntaqui)",
+    "lat": 0.33,
+    "lon": -78.21
+  },
+  {
+    "id": "cotacachi",
+    "name": "Cotacachi",
+    "lat": 0.3,
+    "lon": -78.2667
+  },
+  {
+    "id": "otavalo",
+    "name": "Otavalo",
+    "lat": 0.2333,
+    "lon": -78.2667
+  },
+  {
+    "id": "pimampiro",
+    "name": "Pimampiro",
+    "lat": 0.4,
+    "lon": -77.94
+  },
+  {
+    "id": "urcuqui",
+    "name": "San Miguel de Urcuquí",
+    "lat": 0.42,
+    "lon": -78.19
+  },
+  {
+    "id": "loja",
+    "name": "Loja",
+    "lat": -3.9931,
+    "lon": -79.2042
+  },
+  {
+    "id": "calvas",
+    "name": "Calvas (Cariamanga)",
+    "lat": -4.32,
+    "lon": -79.55
+  },
+  {
+    "id": "catamayo",
+    "name": "Catamayo",
+    "lat": -3.98,
+    "lon": -79.35
+  },
+  {
+    "id": "celica",
+    "name": "Celica",
+    "lat": -4.1,
+    "lon": -79.95
+  },
+  {
+    "id": "chaguarpamba",
+    "name": "Chaguarpamba",
+    "lat": -3.88,
+    "lon": -79.65
+  },
+  {
+    "id": "espindola",
+    "name": "Espíndola (Amaluza)",
+    "lat": -4.58,
+    "lon": -79.43
+  },
+  {
+    "id": "gonzanama",
+    "name": "Gonzanamá",
+    "lat": -4.23,
+    "lon": -79.43
+  },
+  {
+    "id": "macara",
+    "name": "Macará",
+    "lat": -4.38,
+    "lon": -79.94
+  },
+  {
+    "id": "olmedo_l",
+    "name": "Olmedo (Loja)",
+    "lat": -3.97,
+    "lon": -79.65
+  },
+  {
+    "id": "paltas",
+    "name": "Paltas (Catacocha)",
+    "lat": -4.05,
+    "lon": -79.65
+  },
+  {
+    "id": "pindal",
+    "name": "Pindal",
+    "lat": -4.12,
+    "lon": -80.11
+  },
+  {
+    "id": "puyango",
+    "name": "Puyango (Alamor)",
+    "lat": -3.98,
+    "lon": -80.02
+  },
+  {
+    "id": "quilanga",
+    "name": "Quilanga",
+    "lat": -4.3,
+    "lon": -79.4
+  },
+  {
+    "id": "saraguro",
+    "name": "Saraguro",
+    "lat": -3.62,
+    "lon": -79.24
+  },
+  {
+    "id": "sozoranga",
+    "name": "Sozoranga",
+    "lat": -4.33,
+    "lon": -79.79
+  },
+  {
+    "id": "zapotillo",
+    "name": "Zapotillo",
+    "lat": -4.38,
+    "lon": -80.24
+  },
+  {
+    "id": "babahoyo",
+    "name": "Babahoyo",
+    "lat": -1.8022,
+    "lon": -79.5344
+  },
+  {
+    "id": "baba",
+    "name": "Baba",
+    "lat": -1.78,
+    "lon": -79.68
+  },
+  {
+    "id": "buena_fe",
+    "name": "Buena Fe (San Jacinto)",
+    "lat": -0.89,
+    "lon": -79.49
+  },
+  {
+    "id": "mocache",
+    "name": "Mocache",
+    "lat": -1.18,
+    "lon": -79.51
+  },
+  {
+    "id": "montalvo",
+    "name": "Montalvo",
+    "lat": -1.79,
+    "lon": -79.29
+  },
+  {
+    "id": "palenque",
+    "name": "Palenque",
+    "lat": -1.43,
+    "lon": -79.76
+  },
+  {
+    "id": "puebloviejo",
+    "name": "Puebloviejo",
+    "lat": -1.55,
+    "lon": -79.53
+  },
+  {
+    "id": "quevedo",
+    "name": "Quevedo",
+    "lat": -1.0286,
+    "lon": -79.4635
+  },
+  {
+    "id": "quinsaloma",
+    "name": "Quinsaloma",
+    "lat": -1.21,
+    "lon": -79.31
+  },
+  {
+    "id": "urdaneta",
+    "name": "Urdaneta (Catarama)",
+    "lat": -1.57,
+    "lon": -79.47
+  },
+  {
+    "id": "valencia",
+    "name": "Valencia",
+    "lat": -0.95,
+    "lon": -79.35
+  },
+  {
+    "id": "ventanas",
+    "name": "Ventanas",
+    "lat": -1.45,
+    "lon": -79.46
+  },
+  {
+    "id": "vinces",
+    "name": "Vinces",
+    "lat": -1.56,
+    "lon": -79.75
+  },
+  {
+    "id": "portoviejo",
+    "name": "Portoviejo",
+    "lat": -1.0546,
+    "lon": -80.4545
+  },
+  {
+    "id": "bolivar_m",
+    "name": "Bolívar (Calceta)",
+    "lat": -0.85,
+    "lon": -80.16
+  },
+  {
+    "id": "chone",
+    "name": "Chone",
+    "lat": -0.6981,
+    "lon": -80.0936
+  },
+  {
+    "id": "el_carmen",
+    "name": "El Carmen",
+    "lat": -0.27,
+    "lon": -79.46
+  },
+  {
+    "id": "flavio_alfaro",
+    "name": "Flavio Alfaro",
+    "lat": -0.4,
+    "lon": -79.9
+  },
+  {
+    "id": "jama",
+    "name": "Jama",
+    "lat": -0.2,
+    "lon": -80.26
+  },
+  {
+    "id": "jaramijo",
+    "name": "Jaramijó",
+    "lat": -0.96,
+    "lon": -80.64
+  },
+  {
+    "id": "jipijapa",
+    "name": "Jipijapa",
+    "lat": -1.35,
+    "lon": -80.58
+  },
+  {
+    "id": "junin",
+    "name": "Junín",
+    "lat": -0.93,
+    "lon": -80.2
+  },
+  {
+    "id": "manta",
+    "name": "Manta",
+    "lat": -0.9677,
+    "lon": -80.7089
+  },
+  {
+    "id": "montecristi",
+    "name": "Montecristi",
+    "lat": -1.0456,
+    "lon": -80.6589
+  },
+  {
+    "id": "olmedo_m",
+    "name": "Olmedo (Manabí)",
+    "lat": -1.38,
+    "lon": -80.2
+  },
+  {
+    "id": "pajan",
+    "name": "Paján",
+    "lat": -1.55,
+    "lon": -80.43
+  },
+  {
+    "id": "pedernales",
+    "name": "Pedernales",
+    "lat": 0.07,
+    "lon": -80.05
+  },
+  {
+    "id": "pichincha_m",
+    "name": "Pichincha",
+    "lat": -1.05,
+    "lon": -79.82
+  },
+  {
+    "id": "puerto_lopez",
+    "name": "Puerto López",
+    "lat": -1.56,
+    "lon": -80.81
+  },
+  {
+    "id": "rocafuerte",
+    "name": "Rocafuerte",
+    "lat": -0.92,
+    "lon": -80.45
+  },
+  {
+    "id": "san_vicente",
+    "name": "San Vicente",
+    "lat": -0.59,
+    "lon": -80.41
+  },
+  {
+    "id": "santa_ana",
+    "name": "Santa Ana",
+    "lat": -1.21,
+    "lon": -80.37
+  },
+  {
+    "id": "sucre",
+    "name": "Sucre (Bahía de Caráquez)",
+    "lat": -0.6,
+    "lon": -80.42
+  },
+  {
+    "id": "tosagua",
+    "name": "Tosagua",
+    "lat": -0.79,
+    "lon": -80.24
+  },
+  {
+    "id": "veinticuatro_mayo",
+    "name": "24 de Mayo (Sucre)",
+    "lat": -1.28,
+    "lon": -80.42
+  },
+  {
+    "id": "macas",
+    "name": "Morona (Macas)",
+    "lat": -2.3087,
+    "lon": -78.1114
+  },
+  {
+    "id": "gualaquiza",
+    "name": "Gualaquiza",
+    "lat": -3.4,
+    "lon": -78.58
+  },
+  {
+    "id": "huamboya",
+    "name": "Huamboya",
+    "lat": -1.93,
+    "lon": -77.99
+  },
+  {
+    "id": "limon_indanza",
+    "name": "Limón Indanza (Gral. Plaza)",
+    "lat": -2.97,
+    "lon": -78.43
+  },
+  {
+    "id": "logrono",
+    "name": "Logroño",
+    "lat": -2.62,
+    "lon": -78.19
+  },
+  {
+    "id": "pablo_sexto",
+    "name": "Pablo Sexto",
+    "lat": -1.92,
+    "lon": -78.03
+  },
+  {
+    "id": "palora",
+    "name": "Palora",
+    "lat": -1.7,
+    "lon": -77.97
+  },
+  {
+    "id": "san_juan_bosco",
+    "name": "San Juan Bosco",
+    "lat": -3.14,
+    "lon": -78.52
+  },
+  {
+    "id": "santiago_mendez",
+    "name": "Santiago (Méndez)",
+    "lat": -2.71,
+    "lon": -78.32
+  },
+  {
+    "id": "sucua",
+    "name": "Sucúa",
+    "lat": -2.46,
+    "lon": -78.17
+  },
+  {
+    "id": "taisha",
+    "name": "Taisha",
+    "lat": -2.38,
+    "lon": -77.5
+  },
+  {
+    "id": "tiwintza",
+    "name": "Tiwintza (Santiago)",
+    "lat": -3.02,
+    "lon": -77.87
+  },
+  {
+    "id": "tena",
+    "name": "Tena",
+    "lat": -0.9938,
+    "lon": -77.8129
+  },
+  {
+    "id": "archidona",
+    "name": "Archidona",
+    "lat": -0.9103,
+    "lon": -77.8081
+  },
+  {
+    "id": "arosemena_tola",
+    "name": "Carlos Julio Arosemena Tola",
+    "lat": -1.18,
+    "lon": -77.87
+  },
+  {
+    "id": "el_chaco",
+    "name": "El Chaco",
+    "lat": -0.33,
+    "lon": -77.81
+  },
+  {
+    "id": "quijos",
+    "name": "Quijos (Baeza)",
+    "lat": -0.4636,
+    "lon": -77.8906
+  },
+  {
+    "id": "el_coca",
+    "name": "Orellana (Pto. Fco. de Orellana)",
+    "lat": -0.4667,
+    "lon": -76.9833
+  },
+  {
+    "id": "aguarico",
+    "name": "Aguarico (Tiputini)",
+    "lat": -0.78,
+    "lon": -75.52
+  },
+  {
+    "id": "joya_sachas",
+    "name": "La Joya de los Sachas",
+    "lat": -0.3,
+    "lon": -76.86
+  },
+  {
+    "id": "loreto",
+    "name": "Loreto",
+    "lat": -0.69,
+    "lon": -77.31
+  },
+  {
+    "id": "pastaza_puyo",
+    "name": "Pastaza (Puyo)",
+    "lat": -1.4837,
+    "lon": -78.0026
+  },
+  {
+    "id": "arajuno",
+    "name": "Arajuno",
+    "lat": -1.23,
+    "lon": -77.7
+  },
+  {
+    "id": "mera",
+    "name": "Mera",
+    "lat": -1.46,
+    "lon": -78.11
+  },
+  {
+    "id": "santa_clara",
+    "name": "Santa Clara",
+    "lat": -1.27,
+    "lon": -77.89
+  },
+  {
+    "id": "quito",
+    "name": "Quito (D.M.)",
+    "lat": -0.1807,
+    "lon": -78.4678
+  },
+  {
+    "id": "cayambe",
+    "name": "Cayambe",
+    "lat": 0.0417,
+    "lon": -78.1458
+  },
+  {
+    "id": "mejia",
+    "name": "Mejía (Machachi)",
+    "lat": -0.51,
+    "lon": -78.57
+  },
+  {
+    "id": "pedro_moncayo",
+    "name": "Pedro Moncayo (Tabacundo)",
+    "lat": 0.05,
+    "lon": -78.22
+  },
+  {
+    "id": "pedro_vicente_maldonado",
+    "name": "Pedro Vicente Maldonado",
+    "lat": 0.08,
+    "lon": -79.05
+  },
+  {
+    "id": "puerto_quito",
+    "name": "Puerto Quito",
+    "lat": 0.22,
+    "lon": -79.26
+  },
+  {
+    "id": "ruminahui",
+    "name": "Rumiñahui (Sangolquí)",
+    "lat": -0.3328,
+    "lon": -78.4489
+  },
+  {
+    "id": "san_miguel_bancos",
+    "name": "San Miguel de Los Bancos",
+    "lat": 0.02,
+    "lon": -78.9
+  },
+  {
+    "id": "santa_elena",
+    "name": "Santa Elena",
+    "lat": -2.2267,
+    "lon": -80.8583
+  },
+  {
+    "id": "la_libertad",
+    "name": "La Libertad",
+    "lat": -2.23,
+    "lon": -80.91
+  },
+  {
+    "id": "salinas",
+    "name": "Salinas",
+    "lat": -2.22,
+    "lon": -80.96
+  },
+  {
+    "id": "santo_domingo",
+    "name": "Santo Domingo",
+    "lat": -0.25,
+    "lon": -79.1667
+  },
+  {
+    "id": "la_concordia",
+    "name": "La Concordia",
+    "lat": 0.01,
+    "lon": -79.39
+  },
+  {
+    "id": "nueva_loja",
+    "name": "Lago Agrio (Nueva Loja)",
+    "lat": 0.0847,
+    "lon": -76.8828
+  },
+  {
+    "id": "cascales",
+    "name": "Cascales (El Dorado)",
+    "lat": 0.07,
+    "lon": -77.17
+  },
+  {
+    "id": "cuyabeno",
+    "name": "Cuyabeno (Tarapoa)",
+    "lat": -0.12,
+    "lon": -76.35
+  },
+  {
+    "id": "gonzalo_pizarro",
+    "name": "Gonzalo Pizarro (Lumbaquí)",
+    "lat": 0.05,
+    "lon": -77.34
+  },
+  {
+    "id": "putumayo",
+    "name": "Putumayo (Pto. El Carmen)",
+    "lat": 0.11,
+    "lon": -75.87
+  },
+  {
+    "id": "shushufindi",
+    "name": "Shushufindi",
+    "lat": -0.18,
+    "lon": -76.65
+  },
+  {
+    "id": "sucumbios_c",
+    "name": "Sucumbíos (La Bonita)",
+    "lat": 0.5,
+    "lon": -77.53
+  },
+  {
+    "id": "ambato",
+    "name": "Ambato",
+    "lat": -1.2491,
+    "lon": -78.6268
+  },
+  {
+    "id": "banos",
+    "name": "Baños de Agua Santa",
+    "lat": -1.3964,
+    "lon": -78.4247
+  },
+  {
+    "id": "cevallos",
+    "name": "Cevallos",
+    "lat": -1.36,
+    "lon": -78.62
+  },
+  {
+    "id": "mocha",
+    "name": "Mocha",
+    "lat": -1.42,
+    "lon": -78.66
+  },
+  {
+    "id": "patate",
+    "name": "Patate",
+    "lat": -1.31,
+    "lon": -78.51
+  },
+  {
+    "id": "pelileo",
+    "name": "Pelileo",
+    "lat": -1.3308,
+    "lon": -78.5442
+  },
+  {
+    "id": "pillaro",
+    "name": "Píllaro",
+    "lat": -1.1736,
+    "lon": -78.5375
+  },
+  {
+    "id": "quero",
+    "name": "Quero",
+    "lat": -1.38,
+    "lon": -78.61
+  },
+  {
+    "id": "tisaleo",
+    "name": "Tisaleo",
+    "lat": -1.35,
+    "lon": -78.67
+  },
+  {
+    "id": "zamora",
+    "name": "Zamora",
+    "lat": -4.0667,
+    "lon": -78.95
+  },
+  {
+    "id": "centinela_condor",
+    "name": "Centinela del Cóndor (Zumbi)",
+    "lat": -3.9,
+    "lon": -78.78
+  },
+  {
+    "id": "chinchipe",
+    "name": "Chinchipe (Zumba)",
+    "lat": -4.86,
+    "lon": -79.13
+  },
+  {
+    "id": "el_pangui",
+    "name": "El Pangui",
+    "lat": -3.62,
+    "lon": -78.58
+  },
+  {
+    "id": "nangaritza",
+    "name": "Nangaritza (Guayzimi)",
+    "lat": -4.04,
+    "lon": -78.63
+  },
+  {
+    "id": "palanda",
+    "name": "Palanda",
+    "lat": -4.65,
+    "lon": -79.13
+  },
+  {
+    "id": "paquisha",
+    "name": "Paquisha",
+    "lat": -3.93,
+    "lon": -78.67
+  },
+  {
+    "id": "yacuambi",
+    "name": "Yacuambi (28 de Mayo)",
+    "lat": -3.73,
+    "lon": -78.92
+  },
+  {
+    "id": "yantzaza",
+    "name": "Yantzaza",
+    "lat": -3.83,
+    "lon": -78.76
+  }
+]

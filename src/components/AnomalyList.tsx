@@ -69,8 +69,7 @@ export const AnomalyList: React.FC<AnomalyListProps> = ({
   const visible = expanded ? filtered : filtered.slice(0, INITIAL_ROWS)
 
   const scopeButton = (active: boolean) =>
-    `px-3.5 py-1.5 rounded-full text-xs font-bold transition-colors duration-250 ${
-      active ? 'bg-[#0B1B3D] text-white' : 'text-slate-500 hover:text-[#0B1B3D]'
+    `px-3.5 py-1.5 rounded-full text-xs font-bold transition-colors duration-250 ${active ? 'bg-[#0B1B3D] text-white' : 'text-slate-500 hover:text-[#0B1B3D]'
     }`
 
   return (
@@ -122,9 +121,8 @@ export const AnomalyList: React.FC<AnomalyListProps> = ({
                   textStyle: { color: '#ffffff', fontSize: 12 },
                   formatter: (p: Array<{ dataIndex: number; value: number | null }>) =>
                     p?.length
-                      ? `${formatWeekFriendly(selectedYear, p[0].dataIndex + 1)}<br/><b>${
-                          p[0].value === null ? '—' : `${p[0].value > 0 ? '+' : ''}${p[0].value}`
-                        }</b> fcd vs media`
+                      ? `${formatWeekFriendly(selectedYear, p[0].dataIndex + 1)}<br/><b>${p[0].value === null ? '—' : `${p[0].value > 0 ? '+' : ''}${p[0].value}`
+                      }</b> fcd vs media`
                       : '',
                 },
                 grid: { top: 12, left: 40, right: 8, bottom: 24 },
@@ -179,9 +177,8 @@ export const AnomalyList: React.FC<AnomalyListProps> = ({
                   <tr
                     key={`${item.year}-${item.week}`}
                     onClick={() => onSelectAnomaly(item.year, item.week)}
-                    className={`group cursor-pointer transition-colors ${
-                      isSelected ? 'bg-[#FFF8F2]' : 'hover:bg-[#F8FAFC]'
-                    }`}
+                    className={`group cursor-pointer transition-colors ${isSelected ? 'bg-[#FFF8F2]' : 'hover:bg-[#F8FAFC]'
+                      }`}
                   >
                     <td className="py-4 pr-4">
                       <span className="font-extrabold text-[#0B1B3D]">{item.year}</span>
@@ -204,7 +201,6 @@ export const AnomalyList: React.FC<AnomalyListProps> = ({
                       <span className="opacity-0 group-hover:opacity-100 transition-opacity text-xs mr-1">
                         Ver en mapa
                       </span>
-                      <span className="inline-block transition-transform group-hover:translate-x-1">→</span>
                     </td>
                   </tr>
                 )

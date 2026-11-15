@@ -10,6 +10,8 @@ import { Compare } from './pages/Compare'
 import { Alertas } from './pages/Alertas'
 import { AboutTeam } from './pages/AboutTeam'
 import { Metodologia } from './pages/Metodologia'
+import { Simulador } from './pages/Simulador'
+import { Prediccion } from './pages/Prediccion'
 import { isLandingPath } from './utils/routes'
 
 const AppLayout: React.FC = () => {
@@ -38,6 +40,8 @@ const AppLayout: React.FC = () => {
           <Routes>
             <Route path="/" element={<Home />} />
             <Route path="/explorar" element={<Explore />} />
+            <Route path="/prediccion" element={<Prediccion />} />
+            <Route path="/simulador" element={<Simulador />} />
             <Route path="/comparar" element={<Compare />} />
             <Route path="/alertas" element={<Alertas />} />
             <Route path="/equipo" element={<AboutTeam />} />

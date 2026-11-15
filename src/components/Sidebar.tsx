@@ -4,7 +4,7 @@ import { NAV_ITEMS } from '../utils/navItems'
 
 export const Sidebar: React.FC = () => {
   return (
-    <aside className="w-56 bg-[#071C3A] text-slate-300 min-h-[calc(100vh-72px)] flex-col py-6 px-3 shrink-0 hidden lg:flex">
+    <aside className="w-56 bg-[#071C3A] text-slate-300 sticky top-[72px] h-[calc(100vh-72px)] self-start flex flex-col py-6 px-3 shrink-0 hidden lg:flex overflow-y-auto z-30">
       <nav className="space-y-1 flex-1" aria-label="Navegación lateral">
         {NAV_ITEMS.map((item) => {
           const Icon = item.icon

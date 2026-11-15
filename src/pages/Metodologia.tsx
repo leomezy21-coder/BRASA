@@ -9,15 +9,15 @@ const STEPS = [
   },
   {
     title: 'fire_cell_days',
-    body: 'Para cada semana se cuentan las combinaciones celda–día de una cuadrícula común con al menos un foco activo. Así, la mayor resolución de VIIRS no multiplica artificialmente la actividad.',
+    body: 'La métrica utilizada representa actividad térmica agregada por celda geográfica de 1°, día y familia de sensor. No equivale al número de incendios individuales.',
   },
   {
     title: 'Armonización',
-    body: 'VIIRS se calibra a la escala de MODIS usando el periodo en que ambos sensores observan a la vez (2012–2018). El resultado es una serie continua y comparable de 2001 a 2025.',
+    body: 'Las detecciones MODIS y VIIRS se agrupan espacial y temporalmente para realizar consultas comparativas. No se aplica una calibración radiométrica que haga equivalentes ambos sensores.',
   },
   {
     title: 'Climatología y anomalías',
-    body: 'Para cada semana ISO se calcula la media y los percentiles P10, P50 y P90 de 2001–2025. Una semana se compara con su propia historia mediante su percentil y su z-score.',
+    body: 'Las estadísticas semanales se calculan a partir de los datos disponibles para el territorio, sensor y período consultados. La cobertura puede variar entre fuentes.',
   },
 ]
 
@@ -37,7 +37,7 @@ export const Metodologia: React.FC = () => {
           De focos dispersos a una <span className="text-[#FF7900]">serie armonizada</span>.
         </h1>
         <p className="mt-6 max-w-2xl text-lg text-slate-600 leading-relaxed">
-          Dos sensores, dos resoluciones y 25 años de datos, convertidos en un calendario de actividad de quema que se
+          Registros MODIS y VIIRS con cobertura temporal variable, organizados en un calendario de actividad de quema que se
           puede comparar semana a semana.
         </p>
       </section>
@@ -90,7 +90,6 @@ export const Metodologia: React.FC = () => {
               className={`mt-10 inline-flex items-center gap-2.5 px-7 py-3.5 bg-gradient-to-r from-[#FF7900] to-[#FF5500] text-white font-bold rounded-full shadow-lg shadow-[#FF7900]/25 ${PRIMARY_BUTTON_FX} group`}
             >
               <span>Explorar los datos</span>
-              <span className="text-lg leading-none transition-transform group-hover:translate-x-1">→</span>
             </Link>
           </div>
         </div>

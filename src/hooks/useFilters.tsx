@@ -1,4 +1,5 @@
 // Contexto y Hook de Filtros para BRASA
+// Soporte jerárquico completo: País -> Provincia -> Ciudad / Cantón
 
 import React, { createContext, useContext, useState, useMemo } from 'react'
 import type {
@@ -9,6 +10,7 @@ import type {
   SensorType,
 } from '../types'
 import { circleToPolygonGeoJSON } from '../utils/geoUtils'
+import { getProvincesForCountry, getCountriesForContinent } from '../utils/territoryData'
 
 export interface FiltersContextType {
   filters: FilterState
@@ -16,6 +18,8 @@ export interface FiltersContextType {
   coverageRadiusMeters: number
   setSelectedWeek: (week: number) => void
   setCoverageRadiusMeters: (radius: number) => void
+  setContinent: (continent: string) => void
+  setCountry: (code: string, name?: string, center?: [number, number]) => void
   setProvinceId: (id: string, center?: [number, number]) => void
   setCantonId: (id: string, center?: [number, number]) => void
   setYearRange: (range: [number, number]) => void
@@ -32,13 +36,15 @@ export interface FiltersContextType {
 const DEFAULT_RADIUS = 18500
 
 const DEFAULT_FILTERS: FilterState = {
-  country: 'Ecuador',
+  continent: 'América del Sur',
+  country: 'ECU',
+  countryName: 'Ecuador',
   provinceId: 'chimborazo',
   cantonId: 'riobamba',
-  yearRange: [2001, 2025],
+  yearRange: [2005, 2025],
   selectedYear: 2024,
   sensor: 'harmonized',
-  confidence: 'nominal_high',
+  confidence: 'all',
   daynight: 'all',
   customGeometry: {
     type: 'circle',
@@ -77,14 +83,70 @@ export const FiltersProvider: React.FC<{ children: React.ReactNode }> = ({ child
     })
   }
 
+  const setContinent = (continent: string) => {
+    setFilters((prev) => {
+      const contCountries = getCountriesForContinent(continent)
+      const currentInContinent = contCountries.some((c) => c.code === prev.country)
+      const targetCountry = currentInContinent ? null : contCountries[0]
+
+      if (targetCountry) {
+        const radius = prev.coverageRadiusMeters || DEFAULT_RADIUS
+        return {
+          ...prev,
+          continent,
+          country: targetCountry.code,
+          countryName: targetCountry.name,
+          cantonId: '',
+          customGeometry: {
+            type: 'circle',
+            center: [targetCountry.lat, targetCountry.lon],
+            radiusMeters: radius,
+            geojson: circleToPolygonGeoJSON(targetCountry.lat, targetCountry.lon, radius),
+          },
+        }
+      }
+
+      return {
+        ...prev,
+        continent,
+      }
+    })
+  }
+
+  const setCountry = (code: string, name?: string, center?: [number, number]) => {
+    const provs = getProvincesForCountry(code)
+    const firstProv = provs[0]
+    const firstCanton = firstProv?.cantons?.[0]
+    const newCenter = center || firstProv?.center || [-1.6709, -78.6545]
+    const radius = filters.coverageRadiusMeters || DEFAULT_RADIUS
+
+    setFilters((prev) => ({
+      ...prev,
+      country: code,
+      countryName: name || (code === 'ECU' ? 'Ecuador' : code),
+      provinceId: '',
+      cantonId: '',
+      customGeometry: {
+        type: 'circle',
+        center: newCenter,
+        radiusMeters: radius,
+        geojson: circleToPolygonGeoJSON(newCenter[0], newCenter[1], radius),
+      },
+    }))
+  }
+
   const setProvinceId = (provinceId: string, center?: [number, number]) => {
     setFilters((prev) => {
-      const newCenter = center || (provinceId === 'chimborazo' ? [-1.6709, -78.6545] : [-0.2298, -78.5249])
+      const provs = getProvincesForCountry(prev.country)
+      const prov = provs.find((p) => p.id === provinceId)
+      const firstCanton = prov?.cantons?.[0]
+      const newCenter = center || prov?.center || (provinceId === 'chimborazo' ? [-1.6709, -78.6545] : [-0.2298, -78.5249])
       const radius = prev.coverageRadiusMeters || DEFAULT_RADIUS
+
       return {
         ...prev,
         provinceId,
-        cantonId: provinceId === 'chimborazo' ? 'riobamba' : '',
+        cantonId: firstCanton ? firstCanton.id : '',
         customGeometry: {
           type: 'circle',
           center: newCenter,
@@ -113,7 +175,16 @@ export const FiltersProvider: React.FC<{ children: React.ReactNode }> = ({ child
   }
 
   const setYearRange = (yearRange: [number, number]) => {
-    setFilters((prev) => ({ ...prev, yearRange }))
+    setFilters((prev) => {
+      let newSelectedYear = prev.selectedYear
+      if (newSelectedYear < yearRange[0]) newSelectedYear = yearRange[0]
+      if (newSelectedYear > yearRange[1]) newSelectedYear = yearRange[1]
+      return {
+        ...prev,
+        yearRange,
+        selectedYear: newSelectedYear,
+      }
+    })
   }
 
   const setSelectedYear = (selectedYear: number) => {
@@ -154,6 +225,8 @@ export const FiltersProvider: React.FC<{ children: React.ReactNode }> = ({ child
       coverageRadiusMeters,
       setSelectedWeek,
       setCoverageRadiusMeters,
+      setContinent,
+      setCountry,
       setProvinceId,
       setCantonId,
       setYearRange,

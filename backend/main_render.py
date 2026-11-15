@@ -4,6 +4,7 @@ Levantar con: python -m uvicorn main_mundial:app --reload --port 8000
 Metricas: presencia en celda 1°/dia/sensor, tipo=0. NO incendios individuales.
 """
 from __future__ import annotations
+from datetime import date, timedelta
 import json
 import os
 import sqlite3
@@ -17,7 +18,8 @@ from pydantic import BaseModel, Field
 
 HERE = Path(__file__).resolve().parent
 DB = Path(os.environ.get('BRASA_DB_PATH', str(HERE/'brasa_render.db')))
-app = FastAPI(title='BRASA NASA FIRMS API Mundial (resumen para Render)',version='0.19')
+MAP_DB = Path(os.environ.get('BRASA_MAP_DB_PATH', str(HERE/'brasa_mapa.db')))
+app = FastAPI(title='BRASA NASA FIRMS API Mundial (resumen para Render)',version='0.20')
 app.add_middleware(CORSMiddleware,allow_origins=['*'],allow_methods=['GET','POST'],allow_headers=['*'])
 
 class Filter(BaseModel):
@@ -121,7 +123,7 @@ def health():
         completed=con.execute('SELECT COUNT(*) FROM archivos_procesados WHERE terminado=1').fetchone()[0]
     return {'status':'ok' if prepared and completed==34 else 'incompleto',
             'db':True,'summary_ready':prepared,'csv_completos':completed,
-            'metrica':'presencia_celda_dia_sensor_1grado'}
+            'metrica':'presencia_celda_dia_sensor_1grado', 'map_ready':MAP_DB.is_file()}
 
 
 @app.get('/api/metadata')
@@ -133,7 +135,7 @@ def metadata():
                 'MODIS y VIIRS NO estan armonizados ni son directamente comparables',
                 'VIIRS S-NPP y NOAA-20 se agrupan en VIIRS y pueden fusionarse dentro de una misma celda-dia',
                 'Paises asignados por centro de celda segun Natural Earth 1:110m: aproximacion',
-                'Los puntos espaciales no estan incluidos en la version reducida de Render',
+                'Mapa: muestras limitadas de centros de celdas 1°, no ubicaciones exactas de focos NASA',
                 'FRP muestra maximo de la celda-dia en la base original, no suma',
                 'El año de las series es año ISO de la semana, no necesariamente año calendario',
                 'La confianza/dia-noche se resumen por celda; los filtros no equivalen a filtrar pixeles originales']}
@@ -235,8 +237,75 @@ def current_status(f:Filter):
 
 @app.post('/api/hotspots')
 def hotspots(f: HotspotFilter):
+    """Devuelve muestras ESPACIALES de celdas-día 1°, no pixeles originales.
+
+    Mantiene el contrato {points: [{lat,lon,date,frp,sensor}]} del frontend.
+    Requiere año+semana ISO, o date_from+date_to (máx. 31 días).
+    Filtra por country_code ISO3, sensor, confianza y dia/noche. MAX 5000.
+    """
     validate(f,for_points=True)
-    raise HTTPException(status_code=501, detail=(
-        'Mapa espacial no incluido en esta version compacta de Render. '
-        'Los endpoints temporales y estadisticos funcionan con los 34 CSV procesados; '
-        'para mostrar puntos es necesario publicar una capa geoespacial reducida.'))
+    if not MAP_DB.is_file():
+        raise HTTPException(503,detail='La capa espacial no esta desplegada. Ejecuta descomprimir_mapa.py.')
+    if f.year is None and f.week is not None:
+        raise HTTPException(422,detail='Indica year junto con week.')
+    if f.year is not None and f.week is None and not (f.date_from and f.date_to):
+        raise HTTPException(422,detail='Indica week junto con year o un rango date_from/date_to.')
+    if f.year is not None and not(f.year_from <= f.year <= f.year_to):
+        raise HTTPException(422,detail='year debe estar dentro de year_from/year_to.')
+    if bool(f.date_from) != bool(f.date_to):
+        raise HTTPException(422,detail='Indica ambos date_from y date_to.')
+    if f.year is None and not f.date_from:
+        raise HTTPException(422,detail='Indica year+week o date_from+date_to para evitar consultas masivas.')
+
+    w=[];v=[]
+    if f.year is not None:
+        w.extend(['year=?','week=?']) if f.week is not None else w.append('year=?')
+        v.append(f.year)
+        if f.week is not None:
+            v.append(f.week)
+    if f.date_from:
+        try:
+            start=date.fromisoformat(f.date_from)
+            end=date.fromisoformat(f.date_to)
+        except (ValueError,TypeError):
+            raise HTTPException(422,detail='Fechas invalidas. Usa YYYY-MM-DD.')
+        if start > end or (end-start).days > 31:
+            raise HTTPException(422,detail='El rango de fechas debe estar entre 0 y 31 dias.')
+        w.append('date BETWEEN ? AND ?')
+        v.extend([start.isoformat(),end.isoformat()])
+    if f.country_code:
+        w.append('country_code=?')
+        v.append(f.country_code.upper())
+    elif f.continent:
+        with connect() as con:
+            codes=[r[0] for r in con.execute('SELECT country_code FROM paises_ref WHERE continent=?',(f.continent,))]
+        if not codes:
+            return {'points':[], 'sampled':True, 'spatial_resolution_degrees':1.0}
+        w.append('country_code IN ('+','.join(['?']*len(codes))+')')
+        v.extend(codes)
+    if f.sensor != 'harmonized':
+        w.append('sensor=?')
+        v.append(f.sensor.upper())
+    if f.confidence == 'nominal_high':
+        w.append("confidence IN ('n','h')")
+    if f.daynight in ('D','N'):
+        # B significa que en esa celda-día hubo pasos diurnos Y nocturnos.
+        w.append('daynight IN (?,?)')
+        v.extend([f.daynight,'B'])
+    if f.bbox:
+        left,bottom,right,top=f.bbox
+        w.extend(['lon BETWEEN ? AND ?','lat BETWEEN ? AND ?'])
+        v.extend([left,right,bottom,top])
+    query=('SELECT lat,lon,date,frp,sensor FROM mapa_muestras WHERE '
+           + ' AND '.join(w) + ' ORDER BY frp DESC,date DESC LIMIT 5000')
+    try:
+        with sqlite3.connect(MAP_DB.resolve().as_uri()+'?mode=ro',uri=True,timeout=30) as con:
+            rows=con.execute(query,v).fetchall()
+    except sqlite3.Error as exc:
+        raise HTTPException(503,detail=f'Error de acceso a mapa espacial: {exc}')
+    return {'points':[{'lat':float(lat),'lon':float(lon),'date':dia,
+                       'frp':float(frp),'sensor':sensor} for lat,lon,dia,frp,sensor in rows],
+            'sampled':True,'spatial_resolution_degrees':1.0,'limit':5000,
+            'representation':'muestra de centros de celdas de 1 grado por dia y sensor',
+            'note':'No son focos individuales NASA FIRMS. FRP es maximo de celda-dia. '
+                   'La muestra espacial no permite interpretar distribuciones exhaustivas.'}

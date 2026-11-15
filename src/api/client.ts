@@ -124,12 +124,6 @@ async function request<T>(endpoint: string, options: RequestInit = {}): Promise<
     }
   }
 
-  // Si la API remota responde 501 (ej. hotspots no incluidos en la versión compacta de Render)
-  if (response.status === 501 && endpoint.includes('hotspots')) {
-    const parsed = options.body ? JSON.parse(options.body as string) : {}
-    return mockGetHotspots(parsed) as unknown as T
-  }
-
   if (!response.ok) {
     const errorBody = await response.text().catch(() => '')
     throw new Error(
